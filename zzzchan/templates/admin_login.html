@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% set title = "zzzchan - login" %}
+{% block content %}
+<div>
+  <h2>Login</h2>
+  
+  {% from "_formhelpers.html" import render_field %}
+  <form method="post">
+    <dl>
+      {{ render_field(form.username) }}
+      {{ render_field(form.password) }}
+    </dl>
+    <input type="submit" value="Login">
+  </form>
+</div>
+{% endblock %}
+

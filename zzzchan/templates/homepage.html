@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% set title = "zzzchan - homepage" %}
+{% block content %}
+<div>
+  <h2>Boards</h2>
+  <ul>
+    {% for board in boards %}
+    <li>{{ board.dir }} - {{ board.name }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}
+

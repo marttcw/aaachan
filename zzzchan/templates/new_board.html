@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% set title = "zzzchan - New Board" %}
+{% block content %}
+<div>
+  <h2>New Board</h2>
+  
+  {% from "_formhelpers.html" import render_field %}
+  <form method="post">
+    <dl>
+      {{ render_field(form.directory) }}
+      {{ render_field(form.name) }}
+      {{ render_field(form.description) }}
+    </dl>
+    <input type="submit" value="Create new board">
+  </form>
+</div>
+{% endblock %}
+
