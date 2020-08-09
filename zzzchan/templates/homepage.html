@@ -5,7 +5,7 @@
   <h2>Boards</h2>
   <ul>
     {% for board in boards %}
-    <li>{{ board.dir }} - {{ board.name }}</li>
+    <li><a href="/board/{{ board.dir }}/">/{{ board.dir }}/ - {{ board.name }}</a></li>
     {% endfor %}
   </ul>
 </div>

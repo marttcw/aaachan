@@ -1,4 +1,4 @@
-from wtforms import Form, BooleanField, StringField, PasswordField, validators, TextAreaField
+from wtforms import Form, BooleanField, StringField, PasswordField, validators, TextAreaField, SelectField
 
 class SetupForm(Form):
     site_name = StringField('Site Name', [validators.Length(min=1, max=64)])
@@ -20,6 +20,10 @@ class NewBoardForm(Form):
         validators.Length(min=1, max=256)
     ])
     description = TextAreaField('Description')
+
+    btype = SelectField('Type', [
+            validators.DataRequired()
+        ], choices=[('i', 'Imageboard'), ('t', 'Textboard'), ('b', 'Booru')])
 
 class LoginForm(Form):
     username = StringField('Username', [

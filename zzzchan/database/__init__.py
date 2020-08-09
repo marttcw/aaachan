@@ -8,7 +8,7 @@ class Database():
         self.__conn = None
         self.__cursor = None
 
-    def open(self, host: str, dbname: str, user: str, password: str):
+    def open(self, host: str, dbname: str, user: str, password: str) -> None:
         try:
             self.__conn = psycopg2.connect(host=host,
                     database=dbname,
@@ -22,13 +22,14 @@ class Database():
             print(PSYCOPGPREFIX+" "+str(e))
             print(PSYCOPGPREFIX+"Unable to connect to the database.")
 
-    def delete_db(self):
+    # Only use this during development, never in production/release
+    def delete_db(self) -> None:
         self.__cursor.execute("DROP TABLE IF EXISTS users;")
         self.__cursor.execute("DROP TABLE IF EXISTS posts;")
         self.__cursor.execute("DROP TABLE IF EXISTS boards;")
         self.__conn.commit()
 
-    def create_db(self):
+    def create_db(self) -> None:
         self.__cursor.execute("CREATE TABLE IF NOT EXISTS users("+\
                     "id             serial          PRIMARY KEY,"+\
                     "name           varchar(64)     NOT NULL,"+\
@@ -41,7 +42,8 @@ class Database():
                     "directory      varchar(64)     NOT NULL,"+\
                     "name           varchar(128)    NOT NULL,"+\
                     "description    text            NOT NULL,"+\
-                    "next_id        bigint         NOT NULL"+\
+                    "type           char(1)         NOT NULL,"+\
+                    "next_id        bigint          NOT NULL"+\
                 ");")
         self.__cursor.execute("CREATE TABLE IF NOT EXISTS posts("+\
                     "id             serial          PRIMARY KEY,"+\
@@ -49,6 +51,7 @@ class Database():
                     "post_id        bigint,"+\
                     "title          varchar(256)    NOT NULL,"+\
                     "content        text            NOT NULL,"+\
+                    "filepath       text,"+\
                     "CONSTRAINT fk_board_id "+\
                         "FOREIGN KEY(board_id) "+\
                             "REFERENCES boards(id) "+\
@@ -57,7 +60,7 @@ class Database():
         self.__conn.commit()
         print(PSYCOPGPREFIX+"Table created successfully")
 
-    def new_admin(self, admin_username: str, admin_pass: str):
+    def new_admin(self, admin_username: str, admin_pass: str) -> None:
         db_pass = Login.generate(admin_pass)
         self.__cursor.execute("INSERT INTO users(name, pass, salt, type)"+\
                 " VALUES (%s,%s,%s,%s)",
@@ -74,13 +77,26 @@ class Database():
             got_salt = sql_list[0][1]
             return Login.match(got_pass, password, got_salt)
 
-    def new_board(self, directory: str, name: str, description: str = ''):
-        self.__cursor.execute("INSERT INTO boards(directory, name, description)"+\
-                " VALUES (%s,%s,%s)", (directory, name, description));
+    def new_board(self, directory: str, name: str, description: str, btype: str) -> None:
+        self.__cursor.execute("INSERT INTO boards(directory, name, description, type, next_id)"+\
+                " VALUES (%s,%s,%s,%s,%s)",
+                (directory, name, description, btype, 1));
         self.__conn.commit()
 
     def get_board(self, directory: str) -> dict:
         self.__cursor.execute("SELECT name, description FROM boards WHERE directory = %s;", (directory,))
+        sql_list = self.__cursor.fetchall()
+        if len(sql_list) == 0:
+            return {
+                    'exists': False
+            }
+        else:
+            board = sql_list[0]
+            return {
+                    'exists': True,
+                    'name': board[0],
+                    'description': board[1]
+            }
 
     def get_boards(self) -> list:
         self.__cursor.execute("SELECT directory, name FROM boards;")
@@ -93,7 +109,7 @@ class Database():
             })
         return ret_list
 
-    def close(self):
+    def close(self) -> None:
         print(PSYCOPGPREFIX+"Closing session...")
         self.__cursor.close()
         self.__conn.close()
