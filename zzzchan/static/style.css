@@ -28,3 +28,56 @@ div.new_thread {
   padding: 1em;
 }
 
+div.thread, div.post {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+div.thread div.flex_row, div.post div.flex_row {
+  display: flex;
+  flex-flow: row wrap;
+}
+
+div.thread div.image img, div.post div.image img {
+  max-width: 300px;
+}
+
+div.thread div.image, div.post div.image {
+  float: left;
+  padding: 1em;
+  background-color: #DDD;
+  flex: 1;
+}
+
+div.thread div.content, div.post div.content {
+  float: left;
+  padding: 1em;
+  background-color: #CCC;
+  flex: 3 300px;
+}
+
+footer {
+  color: #444;
+}
+
+footer div {
+  margin: 0 auto;
+  max-width: 960px;
+  padding: 2em;
+}
+
+div.links {
+  display: block;
+  width: 100%;
+  float: left;
+}
+
+div.links p.boards {
+  float: left;
+}
+
+div.links p.others {
+  float: right;
+}
+

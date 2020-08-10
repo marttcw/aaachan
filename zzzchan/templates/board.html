@@ -2,6 +2,21 @@
 {% set title = "zzzchan - board" %}
 {% block content %}
 <div>
+  <div class="links">
+    <p class="boards">
+      [
+      {% for board in boards_list %}
+        <a href="/board/{{ board.dir }}">{{ board.dir }}</a>
+        {% if board != boards_list|last %}
+        /
+        {% endif %}
+      {% endfor %}
+      ]
+    </p>
+    <p class="others">
+      [<a href="/">Home</a>]
+    </p>
+  </div>
   <h2>/{{ board_dir }}/ - {{ board_name }}</h2>
   <p>
     {{ board_desc }}
@@ -22,9 +37,28 @@
     </form>
   </div>
 
-  <ul>
-    <li>TEST</li>
-  </ul>
+  <div>
+    {% for thread in threads_list %}
+      <div class="thread">
+        <div class="thread_info">
+          <h4>{{ thread.title }}</h4>
+          <p>
+            {{ thread.id }} - {{ thread.timestamp_op }}
+            <a href="/board/{{ board_dir }}/thread/{{ thread.id }}">Enter thread</a>
+          </p>
+        </div>
+        <div class="flex_row">
+          <div class="image">
+            <p>{{ thread.filepath }}</p>
+            <img src="/uploads/{{ thread.filepath }}">
+          </div>
+          <div class="content">
+            {{ thread.content }}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
 </div>
 {% endblock %}
 

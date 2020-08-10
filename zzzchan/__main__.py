@@ -2,8 +2,10 @@ from flask import Flask, render_template, request, flash, redirect, url_for, ses
 from flask_minify import minify
 from werkzeug.utils import secure_filename
 
+import os
+
 from .database import Database
-from .forms import SetupForm, NewBoardForm, LoginForm, NewThreadForm
+from .forms import SetupForm, NewBoardForm, LoginForm, NewThreadForm, NewPostForm
 from .config import Config
 from .sessions import Sessions
 
@@ -73,6 +75,10 @@ def dashboard():
 
 @app.route('/admin_login', methods=['GET', 'POST'])
 def admin_login():
+    if 'id' in session:
+        if sessions.exists(session['id']):
+            return redirect(url_for('dashboard'))
+
     form = LoginForm(request.form)
     if request.method == 'POST':
         if form.validate():
@@ -92,8 +98,56 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
+@app.route('/board/<board_dir>/thread/<thread_id>/new_post', methods=['POST'])
+def new_post(board_dir: str, thread_id: int):
+    board_info = db.get_board(board_dir)
+    if not board_info['exists']:
+        flash('Board does not exists')
+        return redirect(url_for('index'))
+
+    form = NewPostForm()
+    if form.validate_on_submit():
+        filename = ''
+        title = ''
+        if form.image.data:
+            # If an image was to upload
+            image = form.image.data
+            if image.filename == '' or not allowed_file(image.filename):
+                flash('Error: Invalid file')
+                return redirect(url_for('thread', board_dir=board_dir, thread_id=thread_id))
+            else:
+                filename = secure_filename(image.filename)
+
+                # Save image and insert into database
+                image.save(os.path.join(
+                    app.config['UPLOAD_FOLDER'], filename
+                ))
+
+        if form.title.data:
+            title = form.title.data
+
+        # Any valid form
+        valid, error_msg = db.new_post(board_dir,
+                thread_id,
+                title,
+                form.content.data,
+                filename)
+
+        if valid:
+            flash('New post')
+        else:
+            flash('Error no new post: '+error_msg)
+    else:
+        flash('Error, new post not accepted')
+    return redirect(url_for('thread', board_dir=board_dir, thread_id=thread_id))
+
 @app.route('/board/<board_dir>/new_thread', methods=['POST'])
 def new_thread(board_dir: str):
+    board_info = db.get_board(board_dir)
+    if not board_info['exists']:
+        flash('Board does not exists')
+        return redirect(url_for('index'))
+
     form = NewThreadForm()
     if form.validate_on_submit():
         print("Title:", form.title.data)
@@ -110,7 +164,7 @@ def new_thread(board_dir: str):
 
             # Save image and insert into database
             image.save(os.path.join(
-                app.instance_path, 'uploads', filename
+                app.config['UPLOAD_FOLDER'], filename
             ))
             db.new_thread(board_dir,
                     form.title.data,
@@ -120,6 +174,24 @@ def new_thread(board_dir: str):
     else:
         flash('Error, new thread not accepted')
     return redirect(url_for('board', board_dir=board_dir))
+
+@app.route('/board/<board_dir>/thread/<thread_id>', methods=['GET'])
+def thread(board_dir: str, thread_id: int):
+    board_info = db.get_board(board_dir)
+    if not board_info['exists']:
+        flash('Board does not exists')
+        return redirect(url_for('index'))
+
+    thread_posts = db.get_thread_posts(board_dir, thread_id)
+    new_post_form = NewPostForm()
+    return render_template('thread.html',
+            board_dir=board_dir,
+            board_name=board_info['name'],
+            board_desc=board_info['description'],
+            boards_list=db.get_boards(),
+            thread_id=thread_id,
+            thread_posts=thread_posts,
+            new_post_form=new_post_form)
 
 @app.route('/board/<board_dir>/', methods=['GET'])
 def board(board_dir: str):
@@ -131,14 +203,14 @@ def board(board_dir: str):
     new_thread_form = NewThreadForm()
 
     threads_list = db.get_threads(board_dir)
-    print(threads_list)
 
     return render_template('board.html',
             board_dir=board_dir,
             board_name=board_info['name'],
             board_desc=board_info['description'],
             new_thread_form=new_thread_form,
-            threads_list=threads_list)
+            threads_list=threads_list,
+            boards_list=db.get_boards())
 
 @app.route('/uploads/<filename>')
 def uploads(filename: str):
@@ -156,7 +228,7 @@ def main():
     app.config.update(
             TESTING = True,
             SECRET_KEY = b'(ID()AJ#$2ASJD',
-            UPLOAD_FOLDER = 'uploads/',
+            UPLOAD_FOLDER = os.path.abspath('uploads/'),
             MAX_CONTENT_LENGTH = 2 * 1024 * 1024    # 2 MiB
     )
     db.open('localhost', 'zzzchan-db', 'postgres', 'zzzchan')

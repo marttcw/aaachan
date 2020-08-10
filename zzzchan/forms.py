@@ -1,5 +1,5 @@
 import re
-from flask_wtf import FlaskForm
+from flask_wtf import FlaskForm, RecaptchaField
 from flask_wtf.file import FileField, FileRequired
 from wtforms import Form, BooleanField, StringField, PasswordField, TextAreaField, SelectField
 from wtforms.validators import Length, DataRequired, EqualTo
@@ -47,4 +47,12 @@ class NewThreadForm(FlaskForm):
         DataRequired()
     ])
     image = FileField('Image file', [FileRequired()])
+
+class NewPostForm(FlaskForm):
+    title = StringField('Title')
+    options = StringField('Options')
+    content = TextAreaField('Content', [
+        DataRequired()
+    ])
+    image = FileField('Image file')
 
