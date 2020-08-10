@@ -1,5 +1,6 @@
 import psycopg2
 from .login import Login
+from .timestamp import Timestamp
 
 PSYCOPGPREFIX = "psycopg2 msg: "
 
@@ -26,6 +27,7 @@ class Database():
     def delete_db(self) -> None:
         self.__cursor.execute("DROP TABLE IF EXISTS users;")
         self.__cursor.execute("DROP TABLE IF EXISTS posts;")
+        self.__cursor.execute("DROP TABLE IF EXISTS threads;")
         self.__cursor.execute("DROP TABLE IF EXISTS boards;")
         self.__conn.commit()
 
@@ -45,16 +47,31 @@ class Database():
                     "type           char(1)         NOT NULL,"+\
                     "next_id        bigint          NOT NULL"+\
                 ");")
-        self.__cursor.execute("CREATE TABLE IF NOT EXISTS posts("+\
+        self.__cursor.execute("CREATE TABLE IF NOT EXISTS threads("+\
                     "id             serial          PRIMARY KEY,"+\
                     "board_id       int,"+\
                     "post_id        bigint,"+\
                     "title          varchar(256)    NOT NULL,"+\
                     "content        text            NOT NULL,"+\
-                    "filepath       text,"+\
+                    "filepath       text            NOT NULL,"+\
+                    "ts_op          timestamp       NOT NULL,"+\
+                    "ts_bump        timestamp       NOT NULL,"+\
                     "CONSTRAINT fk_board_id "+\
                         "FOREIGN KEY(board_id) "+\
                             "REFERENCES boards(id) "+\
+                            "ON DELETE CASCADE"+\
+                ");")
+        self.__cursor.execute("CREATE TABLE IF NOT EXISTS posts("+\
+                    "id             serial          PRIMARY KEY,"+\
+                    "thread_id      int,"+\
+                    "post_id        bigint,"+\
+                    "title          varchar(256)    NOT NULL,"+\
+                    "content        text            NOT NULL,"+\
+                    "filepath       text,"+\
+                    "ts             timestamp       NOT NULL,"+\
+                    "CONSTRAINT fk_thread_id "+\
+                        "FOREIGN KEY(thread_id) "+\
+                            "REFERENCES threads(id) "+\
                             "ON DELETE CASCADE"+\
                 ");")
         self.__conn.commit()
@@ -76,6 +93,64 @@ class Database():
             got_pass = sql_list[0][0]
             got_salt = sql_list[0][1]
             return Login.match(got_pass, password, got_salt)
+
+    def new_thread(self, directory: str, title: str, content: str, filepath: str) -> bool:
+        # Fetch board information
+        self.__cursor.execute("SELECT id, next_id FROM boards WHERE directory = %s;",
+                (directory,))
+        sql_list = self.__cursor.fetchall()
+        if len(sql_list) == 0:
+            return False
+
+        # Insert new thread entry
+        board_id = sql_list[0][0]
+        next_id = sql_list[0][1]
+        now_ts = Timestamp.now()
+        self.__cursor.execute("INSERT INTO"+\
+                " threads(board_id, post_id, title, content, filepath, ts_op, ts_bump)"+\
+                " VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                (board_id, next_id, title, content, filepath, now_ts, now_ts))
+        self.__conn.commit()
+
+        # Update next_id
+        self.__cursor.execute("UPDATE boards SET next_id = %s WHERE id = %s;",
+                (next_id + 1, board_id))
+        self.__conn.commit()
+
+    def new_post(self, directory: str, thread: int, title: str, content: str, filepath: str) -> bool:
+        pass
+
+    def delete_thread(self, directory: str, thread_id: int) -> bool:
+        pass
+
+    def delete_post(self, directory: str, thread_id: int, post_id: int) -> bool:
+        pass
+    
+    def get_threads(self, board_directory: str) -> list:
+        self.__cursor.execute("SELECT"+\
+                " threads.post_id, threads.title, threads.content,"+\
+                " threads.filepath, threads.ts_op, threads.ts_bump"+\
+                " FROM threads INNER JOIN boards"+\
+                " ON boards.directory = %s"+\
+                " ORDER BY threads.ts_bump DESC;",
+                (board_directory,))
+        sql_list = self.__cursor.fetchall()
+        if len(sql_list) == 0:
+            return []
+
+        threads_list = []
+
+        for row in sql_list:
+            threads_list.append({
+                'id': row[0],
+                'title': row[1],
+                'content': row[2],
+                'filepath': row[3],
+                'timestamp_op': row[4],
+                'timestamp_bump': row[5]
+            })
+
+        return threads_list
 
     def new_board(self, directory: str, name: str, description: str, btype: str) -> None:
         self.__cursor.execute("INSERT INTO boards(directory, name, description, type, next_id)"+\

@@ -7,6 +7,21 @@
     {{ board_desc }}
   </p>
 
+  <div class="new_thread">
+    <h3>Create a new thread</h3>
+    {% from "_formhelpers.html" import render_field %}
+    <form method="post" action="/board/{{ board_dir }}/new_thread" enctype="multipart/form-data">
+      {{ new_thread_form.csrf_token }}
+      <dl>
+        {{ render_field(new_thread_form.title) }}
+        {{ render_field(new_thread_form.options) }}
+        {{ render_field(new_thread_form.content) }}
+        {{ render_field(new_thread_form.image) }}
+      </dl>
+      <input type="submit" value="Create new thread">
+    </form>
+  </div>
+
   <ul>
     <li>TEST</li>
   </ul>

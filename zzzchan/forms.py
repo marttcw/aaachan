@@ -1,35 +1,50 @@
-from wtforms import Form, BooleanField, StringField, PasswordField, validators, TextAreaField, SelectField
+import re
+from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileRequired
+from wtforms import Form, BooleanField, StringField, PasswordField, TextAreaField, SelectField
+from wtforms.validators import Length, DataRequired, EqualTo
 
-class SetupForm(Form):
-    site_name = StringField('Site Name', [validators.Length(min=1, max=64)])
-    admin_username = StringField('Admin Username', [validators.Length(min=1, max=64)])
+class SetupForm(FlaskForm):
+    site_name = StringField('Site Name', [Length(min=1, max=64)])
+    admin_username = StringField('Admin Username', [Length(min=1, max=64)])
     password = PasswordField('New Password', [
-        validators.DataRequired(),
-        validators.EqualTo('confirm', message='Passwords must match'),
-        validators.Length(min=8, max=256)
+        DataRequired(),
+        EqualTo('confirm', message='Passwords must match'),
+        Length(min=8, max=256)
     ])
     confirm = PasswordField('Repeat Password')
 
-class NewBoardForm(Form):
+class NewBoardForm(FlaskForm):
     directory = StringField('Directory', [
-        validators.DataRequired(),
-        validators.Length(min=1, max=256)
+        DataRequired(),
+        Length(min=1, max=256)
     ])
     name = StringField('Name', [
-        validators.DataRequired(),
-        validators.Length(min=1, max=256)
+        DataRequired(),
+        Length(min=1, max=256)
     ])
     description = TextAreaField('Description')
 
     btype = SelectField('Type', [
-            validators.DataRequired()
+            DataRequired()
         ], choices=[('i', 'Imageboard'), ('t', 'Textboard'), ('b', 'Booru')])
 
-class LoginForm(Form):
+class LoginForm(FlaskForm):
     username = StringField('Username', [
-        validators.DataRequired()
+        DataRequired()
     ])
     password = PasswordField('Password', [
-        validators.DataRequired()
+        DataRequired()
     ])
+
+class NewThreadForm(FlaskForm):
+    title = StringField('Title', [
+        DataRequired(),
+        Length(min=1, max=256)
+    ])
+    options = StringField('Options')
+    content = TextAreaField('Content', [
+        DataRequired()
+    ])
+    image = FileField('Image file', [FileRequired()])
 

@@ -6,6 +6,7 @@
   
   {% from "_formhelpers.html" import render_field %}
   <form method="post">
+    {{ form.csrf_token }}
     <dl>
       {{ render_field(form.directory) }}
       {{ render_field(form.name) }}

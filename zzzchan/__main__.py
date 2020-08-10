@@ -1,8 +1,9 @@
-from flask import Flask, render_template, request, flash, redirect, url_for, session
+from flask import Flask, render_template, request, flash, redirect, url_for, session, send_from_directory
 from flask_minify import minify
+from werkzeug.utils import secure_filename
 
 from .database import Database
-from .forms import SetupForm, NewBoardForm, LoginForm
+from .forms import SetupForm, NewBoardForm, LoginForm, NewThreadForm
 from .config import Config
 from .sessions import Sessions
 
@@ -12,6 +13,7 @@ config = Config()
 sessions = Sessions()
 
 new = True
+allowed_extensions = ['png', 'jpg', 'jpeg', 'gif']
 
 minify(app=app, html=True, js=True, cssless=True)
 
@@ -86,9 +88,38 @@ def admin_login():
 
     return render_template('admin_login.html', form=form)
 
-@app.route('/board/<board_dir>/post', methods=['POST'])
-def post(board_dir: str):
-    return redirect(url_for('index'))
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in allowed_extensions
+
+@app.route('/board/<board_dir>/new_thread', methods=['POST'])
+def new_thread(board_dir: str):
+    form = NewThreadForm()
+    if form.validate_on_submit():
+        print("Title:", form.title.data)
+        print("Options:", form.options.data)
+        print("Content:", form.content.data)
+        image = form.image.data
+        if image.filename == '':
+            flash('No file selected')
+        elif not image or not allowed_file(image.filename):
+            flash('Invalid file')
+        else:
+            flash('Valid')
+            filename = secure_filename(image.filename)
+
+            # Save image and insert into database
+            image.save(os.path.join(
+                app.instance_path, 'uploads', filename
+            ))
+            db.new_thread(board_dir,
+                    form.title.data,
+                    form.content.data,
+                    filename)
+            print("Image:", filename)
+    else:
+        flash('Error, new thread not accepted')
+    return redirect(url_for('board', board_dir=board_dir))
 
 @app.route('/board/<board_dir>/', methods=['GET'])
 def board(board_dir: str):
@@ -97,10 +128,21 @@ def board(board_dir: str):
         flash('Board does not exists')
         return redirect(url_for('index'))
 
+    new_thread_form = NewThreadForm()
+
+    threads_list = db.get_threads(board_dir)
+    print(threads_list)
+
     return render_template('board.html',
             board_dir=board_dir,
             board_name=board_info['name'],
-            board_desc=board_info['description'])
+            board_desc=board_info['description'],
+            new_thread_form=new_thread_form,
+            threads_list=threads_list)
+
+@app.route('/uploads/<filename>')
+def uploads(filename: str):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -110,17 +152,21 @@ def index():
         return render_template('homepage.html', boards=db.get_boards())
 
 def main():
-    global new
+    global new, allowed_extensions
     app.config.update(
             TESTING = True,
-            SECRET_KEY = b'(ID()AJ#$2ASJD'
+            SECRET_KEY = b'(ID()AJ#$2ASJD',
+            UPLOAD_FOLDER = 'uploads/',
+            MAX_CONTENT_LENGTH = 2 * 1024 * 1024    # 2 MiB
     )
     db.open('localhost', 'zzzchan-db', 'postgres', 'zzzchan')
 
     config.read()
-    #db.delete_db()
     if config.get()['site']['name'] != '':
         new = False
+    else:
+        # Only for testing
+        db.delete_db()
 
     app.run(debug=True)
     db.close()

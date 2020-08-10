@@ -22,3 +22,9 @@ div.flash {
   padding: 1em;
 }
 
+div.new_thread {
+  margin: 0 auto;
+  background-color: #DDD;
+  padding: 1em;
+}
+
