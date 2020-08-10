@@ -3,6 +3,8 @@
 {% block content %}
 <div>
   <h2>New Board</h2>
+
+  <a href="/dashboard">Back to dashboard</a>
   
   {% from "_formhelpers.html" import render_field %}
   <form method="post">
@@ -12,6 +14,9 @@
       {{ render_field(form.name) }}
       {{ render_field(form.description) }}
       {{ render_field(form.btype) }}
+      {{ render_field(form.category) }}
+      {{ render_field(form.new_category) }}
+      {{ render_field(form.nswf) }}
     </dl>
     <input type="submit" value="Create new board">
   </form>

@@ -3,16 +3,8 @@
 {% block content %}
 <div>
   <div class="links">
-    <p class="boards">
-      [
-      {% for board in boards_list %}
-        <a href="/board/{{ board.dir }}">{{ board.dir }}</a>
-        {% if board != boards_list|last %}
-        /
-        {% endif %}
-      {% endfor %}
-      ]
-    </p>
+    {% from "_boardslink.html" import boards_links %}
+    {{ boards_links(boards_list) }}
     <p class="others">
       [<a href="/">Home</a>]
     </p>

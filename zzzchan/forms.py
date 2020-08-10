@@ -27,7 +27,20 @@ class NewBoardForm(FlaskForm):
 
     btype = SelectField('Type', [
             DataRequired()
-        ], choices=[('i', 'Imageboard'), ('t', 'Textboard'), ('b', 'Booru')])
+        ], choices=[
+            ('i', 'Imageboard'),
+            ('t', 'Textboard'),
+            ('b', 'Booru')
+        ])
+
+    category = SelectField('Category', [
+            DataRequired()
+        ], coerce=int)
+
+    new_category = StringField('New Category (Created if selected)', [
+    ])
+
+    nswf = BooleanField('NSFW')
 
 class LoginForm(FlaskForm):
     username = StringField('Username', [

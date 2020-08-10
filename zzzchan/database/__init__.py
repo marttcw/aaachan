@@ -29,6 +29,7 @@ class Database():
         self.__cursor.execute("DROP TABLE IF EXISTS posts;")
         self.__cursor.execute("DROP TABLE IF EXISTS threads;")
         self.__cursor.execute("DROP TABLE IF EXISTS boards;")
+        self.__cursor.execute("DROP TABLE IF EXISTS categories;")
         self.__conn.commit()
 
     def create_db(self) -> None:
@@ -39,13 +40,23 @@ class Database():
                     "salt           text            NOT NULL,"+\
                     "type           char(1)         NOT NULL"+\
                 ");")
+        self.__cursor.execute("CREATE TABLE IF NOT EXISTS categories("+\
+                    "id             serial          PRIMARY KEY,"+\
+                    "name           text            NOT NULL"+\
+                ");")
         self.__cursor.execute("CREATE TABLE IF NOT EXISTS boards("+\
                     "id             serial          PRIMARY KEY,"+\
                     "directory      varchar(64)     NOT NULL,"+\
                     "name           varchar(128)    NOT NULL,"+\
                     "description    text            NOT NULL,"+\
                     "type           char(1)         NOT NULL,"+\
-                    "next_id        bigint          NOT NULL"+\
+                    "next_id        bigint          NOT NULL,"+\
+                    "nsfw           boolean         NOT NULL,"+\
+                    "category_id    int             NOT NULL,"+\
+                    "CONSTRAINT fk_category_id "+\
+                        "FOREIGN KEY(category_id) "+\
+                            "REFERENCES categories(id) "+\
+                            "ON DELETE CASCADE"+\
                 ");")
         self.__cursor.execute("CREATE TABLE IF NOT EXISTS threads("+\
                     "id             serial          PRIMARY KEY,"+\
@@ -239,10 +250,12 @@ class Database():
 
         return threads_list
 
-    def new_board(self, directory: str, name: str, description: str, btype: str) -> None:
-        self.__cursor.execute("INSERT INTO boards(directory, name, description, type, next_id)"+\
-                " VALUES (%s,%s,%s,%s,%s)",
-                (directory, name, description, btype, 1));
+    def new_board(self, directory: str, name: str, description: str,
+            btype: str, category_id: int, nsfw: bool) -> None:
+        self.__cursor.execute("INSERT INTO boards(directory, name, description,"+\
+                " type, next_id, category_id, nsfw)"+\
+                " VALUES (%s,%s,%s,%s,%s,%s,%s);",
+                (directory, name, description, btype, 1, category_id, nsfw))
         self.__conn.commit()
 
     def get_board(self, directory: str) -> dict:
@@ -261,15 +274,57 @@ class Database():
             }
 
     def get_boards(self) -> list:
-        self.__cursor.execute("SELECT directory, name FROM boards ORDER BY directory ASC;")
+        self.__cursor.execute("SELECT boards.directory, boards.name,"+\
+                    " categories.id, categories.name"+\
+                " FROM boards INNER JOIN categories"+\
+                " ON boards.category_id = categories.id"+\
+                " ORDER BY categories.name ASC, boards.directory ASC;")
         sql_list = self.__cursor.fetchall()
         ret_list = []
+        cur_cat_list = []
+        prev_cat_id = -1
         for row in sql_list:
-            ret_list.append({
+            cur_cat_id = int(row[2])
+            if prev_cat_id != cur_cat_id:
+                # Create category
+                ret_list.append({
+                    'name': row[3],
+                    'boards': []
+                })
+
+            # Append board to current category
+            ret_list[-1]['boards'].append({
                 'dir': row[0],
                 'name': row[1]
             })
+
+            prev_cat_id = cur_cat_id
         return ret_list
+
+    def new_category(self, name: str) -> int:
+        self.__cursor.execute("INSERT INTO categories(name) VALUES (%s);",
+                (name,))
+        self.__conn.commit()
+
+        self.__cursor.execute("SELECT id FROM categories WHERE name = %s;",
+                (name,))
+        sql_list = self.__cursor.fetchall()
+        if len(sql_list) == 0:
+            return -1
+        else:
+            return int(sql_list[0][0])
+
+    def get_categories_select(self) -> list:
+        categories_list = [(-1, 'New Category')]
+
+        self.__cursor.execute("SELECT id, name FROM categories ORDER BY name ASC;")
+        sql_list = self.__cursor.fetchall()
+        for row in sql_list:
+            categories_list.append((
+                int(row[0]), row[1]
+            ))
+
+        return categories_list
 
     def close(self) -> None:
         print(PSYCOPGPREFIX+"Closing session...")

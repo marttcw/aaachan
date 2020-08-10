@@ -49,16 +49,29 @@ def new_board():
         return redirect(url_for('index'))
 
     form = NewBoardForm(request.form)
+    form.category.choices = db.get_categories_select()
     if request.method == 'POST':
         # Submitting form for new board
         if form.validate():
+            if form.category.data == -1:
+                if form.new_category.data.strip() == '':
+                    flash('Need a name for the new category')
+                    return render_template('new_board.html', form=form)
+                else:
+                    # Create category
+                    cat_id = db.new_category(form.new_category.data)
+            else:
+                cat_id = int(form.category.data)
+
             # Create new board
             db.new_board(form.directory.data,
                     form.name.data,
                     form.description.data,
-                    form.btype.data)
+                    form.btype.data,
+                    cat_id,
+                    form.nswf.data)
             flash('New board created')
-            return render_template('new_board.html', form=NewBoardForm())
+            return redirect(url_for('new_board'))
         else:
             flash('Board not accepted')
             return render_template('new_board.html', form=form)
@@ -159,7 +172,7 @@ def new_thread(board_dir: str):
         elif not image or not allowed_file(image.filename):
             flash('Invalid file')
         else:
-            flash('Valid')
+            flash('New Thread Created')
             filename = secure_filename(image.filename)
 
             # Save image and insert into database
@@ -221,7 +234,7 @@ def index():
     if new:
         return redirect(url_for('setup'))
     else:
-        return render_template('homepage.html', boards=db.get_boards())
+        return render_template('homepage.html', categories=db.get_boards())
 
 def main():
     global new, allowed_extensions

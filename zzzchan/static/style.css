@@ -41,6 +41,7 @@ div.thread div.flex_row, div.post div.flex_row {
 
 div.thread div.image img, div.post div.image img {
   max-width: 300px;
+  max-height: 300px;
 }
 
 div.thread div.image, div.post div.image {
