@@ -129,20 +129,22 @@ class Database():
         next_id = int(sql_list[0][1])
 
         # Fetch thread information
-        self.__cursor.execute("SELECT id FROM threads WHERE post_id = %s;",
-                (thread_id,))
+        self.__cursor.execute("SELECT threads.id FROM threads LEFT JOIN boards"+\
+                " ON threads.board_id = boards.id"+\
+                " WHERE threads.post_id = %s AND boards.directory = %s;",
+                (thread_id, board_directory))
         sql_list = self.__cursor.fetchall()
         if len(sql_list) == 0:
             return (False, "Cannot fetch thread")
 
-        thread_id = sql_list[0][0]
+        thread_id_pk = sql_list[0][0]
         now_ts = Timestamp.now()
 
         # Insert new post entry
         self.__cursor.execute("INSERT INTO"+\
                 " posts(thread_id, post_id, title, content, filepath, ts)"+\
                 " VALUES (%s, %s, %s, %s, %s, %s)",
-                (thread_id, next_id, title, content, filepath, now_ts))
+                (thread_id_pk, next_id, title, content, filepath, now_ts))
 
         # Update next_id
         self.__cursor.execute("UPDATE boards SET next_id = %s WHERE id = %s;",
@@ -150,7 +152,7 @@ class Database():
 
         # Update thread bump timestamp
         self.__cursor.execute("UPDATE threads SET ts_bump = %s WHERE id = %s;",
-                (now_ts, thread_id))
+                (now_ts, thread_id_pk))
 
         self.__conn.commit()
 
@@ -189,11 +191,14 @@ class Database():
         self.__cursor.execute("SELECT"+\
                     " posts.post_id, posts.title, posts.content,"+\
                     " posts.filepath, posts.ts"+\
-                    " FROM posts INNER JOIN threads"+\
+                    " FROM"+\
+                    " posts INNER JOIN threads"+\
                     " ON posts.thread_id = threads.id"+\
-                    " WHERE threads.post_id = %s"+\
+                    " LEFT JOIN boards"+\
+                    " ON threads.board_id = boards.id"+\
+                    " WHERE threads.post_id = %s AND boards.directory = %s"+\
                     " ORDER BY posts.post_id ASC;",
-                    (thread_id,))
+                    (thread_id, board_directory))
         sql_list = self.__cursor.fetchall()
 
         for post in sql_list:

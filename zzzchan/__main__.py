@@ -240,7 +240,7 @@ def main():
         # Only for testing
         db.delete_db()
 
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')
     db.close()
 
 if __name__ == "__main__":
