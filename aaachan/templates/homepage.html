@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% set title = "aaachan - homepage" %}
+{% block content %}
+<div>
+  <h2>Boards</h2>
+  <ul>
+    {% for category in categories %}
+    <li>
+      {{ category.name }}
+      <ul>
+        {% for board in category.boards %}
+          <li><a href="/board/{{ board.dir }}/">/{{ board.dir }}/ - {{ board.name }}</a></li>
+        {% endfor %}
+      </ul>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}
+

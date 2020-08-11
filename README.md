@@ -1,4 +1,4 @@
-# zzzchan
+# aaachan
 Imageboard written in Python + Flask and uses PostgreSQL for database
 
 ## Requirements

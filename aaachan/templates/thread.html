@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% set title = "aaachan - board" %}
+{% block content %}
+<div>
+  <div class="links">
+    {% from "_boardslink.html" import boards_links %}
+    {{ boards_links(boards_list) }}
+    <p class="others">
+      [<a href="/">Home</a>]
+    </p>
+  </div>
+  <h2>/{{ board_dir }}/ - {{ board_name }}</h2>
+  <p>
+    {{ board_desc }}
+  </p>
+
+  <div>
+    [<a href="/board/{{ board_dir }}/">Return</a>]
+    [<a href="#bottom">Bottom</a>]
+  </div>
+
+  <div>
+    {% for post in thread_posts %}
+      <div class="post">
+        <div class="post_info">
+          <h4>{{ post.title }}</h4>
+          <p>
+            {{ post.id }} - {{ post.timestamp }}
+          </p>
+        </div>
+        <div class="flex_row">
+          {% if post.filepath %}
+            <div class="image">
+              <p>{{ post.filepath_show }}</p>
+              <img src="/uploads/{{ post.filepath }}">
+            </div>
+          {% endif %}
+          <div class="content">
+            {{ post.content }}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div>
+    <h3>Reply to thread No.{{ thread_id }}</h3>
+    {% from "_formhelpers.html" import render_field %}
+    <form method="post" action="/board/{{ board_dir }}/thread/{{ thread_id }}/new_post" enctype="multipart/form-data">
+      {{ new_post_form.csrf_token }}
+      <dl>
+        {{ render_field(new_post_form.title) }}
+        {{ render_field(new_post_form.options) }}
+        {{ render_field(new_post_form.content) }}
+        {{ render_field(new_post_form.image) }}
+      </dl>
+      <input type="submit" value="Post">
+    </form>
+  </div>
+
+  <div>
+    [<a href="/board/{{ board_dir }}/">Return</a>]
+    [<a href="#top">Top</a>]
+  </div>
+  <span id="bottom"></span>
+
+</div>
+{% endblock %}
+

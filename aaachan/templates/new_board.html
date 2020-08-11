@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% set title = "aaachan - New Board" %}
+{% block content %}
+<div>
+  <h2>New Board</h2>
+
+  <a href="/dashboard">Back to dashboard</a>
+  
+  {% from "_formhelpers.html" import render_field %}
+  <form method="post">
+    {{ form.csrf_token }}
+    <dl>
+      {{ render_field(form.directory) }}
+      {{ render_field(form.name) }}
+      {{ render_field(form.description) }}
+      {{ render_field(form.btype) }}
+      {{ render_field(form.category) }}
+      {{ render_field(form.new_category) }}
+      {{ render_field(form.nswf) }}
+    </dl>
+    <input type="submit" value="Create new board">
+  </form>
+</div>
+{% endblock %}
+
