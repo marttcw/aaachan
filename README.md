@@ -7,6 +7,7 @@ Imageboard written in Python + Flask and uses PostgreSQL for database
 * [psycopg2](https://www.psycopg.org/) - PostgreSQL adapter for Python
 * [wtforms](https://wtforms.readthedocs.io/en/2.3.x/) - Flexible form validation and rendering library for Python web development
 * [flask-wtf](https://github.com/lepture/flask-wtf) - Simple integration of Flask and WTForms
+* [Pillow](https://python-pillow.org/) - Pillow - PIL fork - Python Imaging Library
 
 ### Additional Requirement
 * Postgresql installed in your system
