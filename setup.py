@@ -14,7 +14,7 @@ setup(
         long_description_content_type='text/markdown',
         python_requires='>=3.6',
         install_requires=[
-            'Flask', 'Flask-Minify', 'psycopg2', 'wtforms'
+            'Flask', 'Flask-Minify', 'psycopg2', 'wtforms', 'Pillow'
         ],
         entry_points = {
               'console_scripts': [

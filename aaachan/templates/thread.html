@@ -22,20 +22,20 @@
   <div>
     {% for post in thread_posts %}
       <div class="post">
-        <div class="post_info">
-          <h4>{{ post.title }}</h4>
-          <p>
-            {{ post.id }} - {{ post.timestamp }}
-          </p>
-        </div>
         <div class="flex_row">
           {% if post.filepath %}
             <div class="image">
-              <p>{{ post.filepath_show }}</p>
-              <img src="/uploads/{{ post.filepath }}">
+              <p>{{ post.filepath }}</p>
+              <a href="/uploads/{{ post.storepath }}"><img src="/uploads/{{ post.thumbpath }}"></a>
             </div>
           {% endif %}
           <div class="content">
+            <div class="post_info">
+              <h4>{{ post.title }}</h4>
+              <p>
+                {{ post.id }} - {{ post.timestamp }}
+              </p>
+            </div>
             {{ post.content }}
           </div>
         </div>

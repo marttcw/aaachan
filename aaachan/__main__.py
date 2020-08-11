@@ -8,11 +8,13 @@ from .database import Database
 from .forms import SetupForm, NewBoardForm, LoginForm, NewThreadForm, NewPostForm
 from .config import Config
 from .sessions import Sessions
+from .thumbnail import Thumbnail
 
 app = Flask(__name__)
 db = Database()
 config = Config()
 sessions = Sessions()
+thumbnail = Thumbnail()
 
 new = True
 allowed_extensions = ['png', 'jpg', 'jpeg', 'gif']
@@ -121,6 +123,8 @@ def new_post(board_dir: str, thread_id: int):
     form = NewPostForm()
     if form.validate_on_submit():
         filename = ''
+        storepath = ''
+        thumbpath = ''
         title = ''
         if form.image.data:
             # If an image was to upload
@@ -130,11 +134,16 @@ def new_post(board_dir: str, thread_id: int):
                 return redirect(url_for('thread', board_dir=board_dir, thread_id=thread_id))
             else:
                 filename = secure_filename(image.filename)
+                storepath = Thumbnail().store_name(image.filename)
 
                 # Save image and insert into database
-                image.save(os.path.join(
-                    app.config['UPLOAD_FOLDER'], filename
-                ))
+                fullstorepath = os.path.join(
+                    app.config['UPLOAD_FOLDER'], storepath
+                )
+                image.save(fullstorepath)
+
+                # Generate and save thumbnail
+                thumbpath = thumbnail.generate(fullstorepath)
 
         if form.title.data:
             title = form.title.data
@@ -144,7 +153,9 @@ def new_post(board_dir: str, thread_id: int):
                 thread_id,
                 title,
                 form.content.data,
-                filename)
+                filename,
+                storepath,
+                thumbpath)
 
         if valid:
             flash('New post')
@@ -174,15 +185,23 @@ def new_thread(board_dir: str):
         else:
             flash('New Thread Created')
             filename = secure_filename(image.filename)
+            storepath = Thumbnail().store_name(image.filename)
 
             # Save image and insert into database
-            image.save(os.path.join(
-                app.config['UPLOAD_FOLDER'], filename
-            ))
+            fullstorepath = os.path.join(
+                app.config['UPLOAD_FOLDER'], storepath
+            )
+            image.save(fullstorepath)
+
+            # Generate and save thumbnail
+            thumbpath = thumbnail.generate(fullstorepath)
+
             db.new_thread(board_dir,
                     form.title.data,
                     form.content.data,
-                    filename)
+                    filename,
+                    storepath,
+                    thumbpath)
             print("Image:", filename)
     else:
         flash('Error, new thread not accepted')
@@ -234,7 +253,9 @@ def index():
     if new:
         return redirect(url_for('setup'))
     else:
-        return render_template('homepage.html', categories=db.get_boards())
+        return render_template('homepage.html',
+                categories=db.get_boards(),
+                site_name=config.get()['site']['name'])
 
 def main():
     global new, allowed_extensions

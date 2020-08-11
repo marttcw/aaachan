@@ -82,3 +82,7 @@ div.links p.others {
   float: right;
 }
 
+div.listed_threads {
+  margin-bottom: 25px;
+}
+

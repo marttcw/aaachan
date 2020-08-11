@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% set title = "zzzchan - board" %}
+{% set title = "aaachan - board" %}
 {% block content %}
 <div>
   <div class="links">
@@ -14,7 +14,32 @@
     {{ board_desc }}
   </p>
 
-  <div class="new_thread">
+  <p><a href="#new_thread">Create a new thread</a></p>
+
+  <div class="listed_threads">
+    {% for thread in threads_list %}
+      <div class="thread">
+        <div class="flex_row">
+          <div class="image">
+            <p>{{ thread.filepath }}</p>
+            <a href="/uploads/{{ thread.storepath }}"><img src="/uploads/{{ thread.thumbpath }}"></a>
+          </div>
+          <div class="content">
+            <div class="thread_info">
+              <h4>{{ thread.title }}</h4>
+              <p>
+                {{ thread.id }} - {{ thread.timestamp_op }}
+                <a href="/board/{{ board_dir }}/thread/{{ thread.id }}">Enter thread</a>
+              </p>
+            </div>
+            {{ thread.content }}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div id="new_thread" class="new_thread">
     <h3>Create a new thread</h3>
     {% from "_formhelpers.html" import render_field %}
     <form method="post" action="/board/{{ board_dir }}/new_thread" enctype="multipart/form-data">
@@ -29,28 +54,6 @@
     </form>
   </div>
 
-  <div>
-    {% for thread in threads_list %}
-      <div class="thread">
-        <div class="thread_info">
-          <h4>{{ thread.title }}</h4>
-          <p>
-            {{ thread.id }} - {{ thread.timestamp_op }}
-            <a href="/board/{{ board_dir }}/thread/{{ thread.id }}">Enter thread</a>
-          </p>
-        </div>
-        <div class="flex_row">
-          <div class="image">
-            <p>{{ thread.filepath_show }}</p>
-            <img src="/uploads/{{ thread.filepath }}">
-          </div>
-          <div class="content">
-            {{ thread.content }}
-          </div>
-        </div>
-      </div>
-    {% endfor %}
-  </div>
 </div>
 {% endblock %}
 

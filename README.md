@@ -11,3 +11,6 @@ Imageboard written in Python + Flask and uses PostgreSQL for database
 ### Additional Requirement
 * Postgresql installed in your system
 
+## Python Virtual Environment
+* `python3 -m venv .venv`
+

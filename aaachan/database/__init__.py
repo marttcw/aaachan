@@ -34,6 +34,7 @@ class Database():
         self.__cursor.execute("DROP TABLE IF EXISTS users;")
         self.__cursor.execute("DROP TABLE IF EXISTS posts;")
         self.__cursor.execute("DROP TABLE IF EXISTS threads;")
+        self.__cursor.execute("DROP TABLE IF EXISTS files;")
         self.__cursor.execute("DROP TABLE IF EXISTS boards;")
         self.__cursor.execute("DROP TABLE IF EXISTS categories;")
         self.__conn.commit()
@@ -64,18 +65,28 @@ class Database():
                             "REFERENCES categories(id) "+\
                             "ON DELETE CASCADE"+\
                 ");")
+        self.__cursor.execute("CREATE TABLE IF NOT EXISTS files("+\
+                    "id             serial          PRIMARY KEY,"+\
+                    "filepath       text            NOT NULL,"+\
+                    "storepath      text            NOT NULL,"+\
+                    "thumbpath      text"
+                ");")
         self.__cursor.execute("CREATE TABLE IF NOT EXISTS threads("+\
                     "id             serial          PRIMARY KEY,"+\
                     "board_id       int,"+\
                     "post_id        bigint,"+\
                     "title          varchar(256)    NOT NULL,"+\
                     "content        text            NOT NULL,"+\
-                    "filepath       text            NOT NULL,"+\
+                    "file_id        int,"+\
                     "ts_op          timestamp       NOT NULL,"+\
                     "ts_bump        timestamp       NOT NULL,"+\
                     "CONSTRAINT fk_board_id "+\
                         "FOREIGN KEY(board_id) "+\
                             "REFERENCES boards(id) "+\
+                            "ON DELETE CASCADE,"+\
+                    "CONSTRAINT fk_file_id "+\
+                        "FOREIGN KEY(file_id) "+\
+                            "REFERENCES files(id) "+\
                             "ON DELETE CASCADE"+\
                 ");")
         self.__cursor.execute("CREATE TABLE IF NOT EXISTS posts("+\
@@ -84,11 +95,15 @@ class Database():
                     "post_id        bigint,"+\
                     "title          varchar(256)    NOT NULL,"+\
                     "content        text            NOT NULL,"+\
-                    "filepath       text,"+\
+                    "file_id        int,"+\
                     "ts             timestamp       NOT NULL,"+\
                     "CONSTRAINT fk_thread_id "+\
                         "FOREIGN KEY(thread_id) "+\
                             "REFERENCES threads(id) "+\
+                            "ON DELETE CASCADE,"+\
+                    "CONSTRAINT fk_file_id "+\
+                        "FOREIGN KEY(file_id) "+\
+                            "REFERENCES files(id) "+\
                             "ON DELETE CASCADE"+\
                 ");")
         self.__conn.commit()
@@ -111,22 +126,35 @@ class Database():
             got_salt = sql_list[0][1]
             return Login.match(got_pass, password, got_salt)
 
-    def new_thread(self, board_directory: str, title: str, content: str, filepath: str) -> bool:
+    def new_thread(self, board_directory: str, title: str, content: str,
+            filepath: str, storepath: str, thumbpath: str) -> bool:
         # Fetch board information
         self.__cursor.execute("SELECT id, next_id FROM boards WHERE directory = %s;",
                 (board_directory,))
         sql_list = self.__cursor.fetchall()
         if len(sql_list) == 0:
             return False
-
-        # Insert new thread entry
         board_id = sql_list[0][0]
         next_id = int(sql_list[0][1])
+
+        # Insert file entry
+        self.__cursor.execute("INSERT INTO"+\
+                " files(filepath, storepath, thumbpath)"+\
+                " VALUES (%s, %s, %s)"+\
+                " RETURNING id;",
+                (filepath, storepath, thumbpath))
+        sql_list = self.__cursor.fetchall()
+        if len(sql_list) == 0:
+            return False
+        file_id = sql_list[0][0]
+        self.__conn.commit()
+
+        # Insert new thread entry
         now_ts = Timestamp.now()
         self.__cursor.execute("INSERT INTO"+\
-                " threads(board_id, post_id, title, content, filepath, ts_op, ts_bump)"+\
+                " threads(board_id, post_id, title, content, file_id, ts_op, ts_bump)"+\
                 " VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                (board_id, next_id, title, content, filepath, now_ts, now_ts))
+                (board_id, next_id, title, content, file_id, now_ts, now_ts))
 
         # Update next_id
         self.__cursor.execute("UPDATE boards SET next_id = %s WHERE id = %s;",
@@ -134,14 +162,13 @@ class Database():
         self.__conn.commit()
 
     def new_post(self, board_directory: str, thread_id: int, title: str,
-            content: str, filepath: str) -> (bool, str):
+            content: str, filepath: str, storepath: str, thumbpath: str) -> (bool, str):
         # Fetch board information
         self.__cursor.execute("SELECT id, next_id FROM boards WHERE directory = %s;",
                 (board_directory,))
         sql_list = self.__cursor.fetchall()
         if len(sql_list) == 0:
             return (False, "Cannot fetch board")
-
         board_id = sql_list[0][0]
         next_id = int(sql_list[0][1])
 
@@ -153,15 +180,29 @@ class Database():
         sql_list = self.__cursor.fetchall()
         if len(sql_list) == 0:
             return (False, "Cannot fetch thread")
-
         thread_id_pk = sql_list[0][0]
-        now_ts = Timestamp.now()
+
+        if filepath != '':
+            # Insert file entry
+            self.__cursor.execute("INSERT INTO"+\
+                    " files(filepath, storepath, thumbpath)"+\
+                    " VALUES (%s, %s, %s)"+\
+                    " RETURNING id;",
+                    (filepath, storepath, thumbpath))
+            sql_list = self.__cursor.fetchall()
+            if len(sql_list) == 0:
+                return (False, "Cannot get file ID")
+            file_id = sql_list[0][0]
+            self.__conn.commit()
+        else:
+            file_id = None
 
         # Insert new post entry
+        now_ts = Timestamp.now()
         self.__cursor.execute("INSERT INTO"+\
-                " posts(thread_id, post_id, title, content, filepath, ts)"+\
+                " posts(thread_id, post_id, title, content, file_id, ts)"+\
                 " VALUES (%s, %s, %s, %s, %s, %s)",
-                (thread_id_pk, next_id, title, content, filepath, now_ts))
+                (thread_id_pk, next_id, title, content, file_id, now_ts))
 
         # Update next_id
         self.__cursor.execute("UPDATE boards SET next_id = %s WHERE id = %s;",
@@ -184,8 +225,12 @@ class Database():
     def get_thread_posts(self, board_directory: str, thread_id: int) -> list:
         self.__cursor.execute("SELECT"+\
                 " threads.post_id, threads.title, threads.content,"+\
-                " threads.filepath, threads.ts_op"+\
-                " FROM threads INNER JOIN boards"+\
+                " threads.ts_op, threads.ts_bump,"+\
+                " files.filepath, files.storepath, files.thumbpath"+\
+                " FROM threads"+\
+                " INNER JOIN files"+\
+                " ON threads.file_id = files.id"+\
+                " LEFT JOIN boards"+\
                 " ON threads.board_id = boards.id"+\
                 " WHERE boards.directory = %s AND threads.post_id = %s"+\
                 " ORDER BY threads.ts_bump DESC;",
@@ -200,18 +245,22 @@ class Database():
             'id': thread_op[0],
             'title': thread_op[1],
             'content': thread_op[2],
-            'filepath': thread_op[3],
-            'filepath_show': filepath_limit(thread_op[3], 16),
-            'timestamp': thread_op[4]
+            'timestamp': thread_op[3],
+            'filepath': thread_op[5],
+            'storepath': thread_op[6],
+            'thumbpath': thread_op[7],
         }]
 
         # Append to the posts_list with the following posts
         self.__cursor.execute("SELECT"+\
                     " posts.post_id, posts.title, posts.content,"+\
-                    " posts.filepath, posts.ts"+\
+                    " posts.ts,"+\
+                    " files.filepath, files.storepath, files.thumbpath"+\
                     " FROM"+\
                     " posts INNER JOIN threads"+\
                     " ON posts.thread_id = threads.id"+\
+                    " LEFT JOIN files"+\
+                    " ON posts.file_id = files.id"+\
                     " LEFT JOIN boards"+\
                     " ON threads.board_id = boards.id"+\
                     " WHERE threads.post_id = %s AND boards.directory = %s"+\
@@ -224,9 +273,10 @@ class Database():
                 'id': post[0],
                 'title': post[1],
                 'content': post[2],
-                'filepath': post[3],
-                'filepath_show': filepath_limit(post[3], 16),
-                'timestamp': post[4]
+                'timestamp': post[3],
+                'filepath': post[4],
+                'storepath': post[5],
+                'thumbpath': post[6],
             })
 
         return posts_list
@@ -234,8 +284,11 @@ class Database():
     def get_threads(self, board_directory: str) -> list:
         self.__cursor.execute("SELECT"+\
                 " threads.post_id, threads.title, threads.content,"+\
-                " threads.filepath, threads.ts_op, threads.ts_bump"+\
-                " FROM threads INNER JOIN boards"+\
+                " threads.ts_op, threads.ts_bump,"+\
+                " files.filepath, files.storepath, files.thumbpath"+\
+                " FROM threads INNER JOIN files"+\
+                " ON threads.file_id = files.id"+\
+                " LEFT JOIN boards"+\
                 " ON threads.board_id = boards.id"+\
                 " WHERE boards.directory = %s"+\
                 " ORDER BY threads.ts_bump DESC;",
@@ -251,10 +304,11 @@ class Database():
                 'id': row[0],
                 'title': row[1],
                 'content': row[2],
-                'filepath': row[3],
-                'filepath_show': filepath_limit(row[3], 16),
-                'timestamp_op': row[4],
-                'timestamp_bump': row[5]
+                'timestamp_op': row[3],
+                'timestamp_bump': row[4],
+                'filepath': row[5],
+                'storepath': row[6],
+                'thumbpath': row[7]
             })
 
         return threads_list
