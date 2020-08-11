@@ -4,6 +4,12 @@ from .timestamp import Timestamp
 
 PSYCOPGPREFIX = "psycopg2 msg: "
 
+def filepath_limit(filepath: str, limit: int) -> str:
+    if len(filepath) > limit:
+        return filepath[0:limit]+"..."
+    else:
+        return filepath
+
 class Database():
     def __init__(self):
         self.__conn = None
@@ -195,6 +201,7 @@ class Database():
             'title': thread_op[1],
             'content': thread_op[2],
             'filepath': thread_op[3],
+            'filepath_show': filepath_limit(thread_op[3], 16),
             'timestamp': thread_op[4]
         }]
 
@@ -218,6 +225,7 @@ class Database():
                 'title': post[1],
                 'content': post[2],
                 'filepath': post[3],
+                'filepath_show': filepath_limit(post[3], 16),
                 'timestamp': post[4]
             })
 
@@ -244,6 +252,7 @@ class Database():
                 'title': row[1],
                 'content': row[2],
                 'filepath': row[3],
+                'filepath_show': filepath_limit(row[3], 16),
                 'timestamp_op': row[4],
                 'timestamp_bump': row[5]
             })
