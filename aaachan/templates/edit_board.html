@@ -1,8 +1,8 @@
 {% extends 'base.html' %}
-{% set title = "New Board" %}
+{% set title = "Edit Board" %}
 {% block content %}
 <div>
-  <h2>New Board</h2>
+  <h2>Edit Board - /{{ board_dir }}/</h2>
 
   <a href="/dashboard">Back to dashboard</a>
   
@@ -10,7 +10,6 @@
   <form method="post">
     {{ form.csrf_token }}
     <dl>
-      {{ render_field(form.directory) }}
       {{ render_field(form.name) }}
       {{ render_field(form.description) }}
       {{ render_field(form.btype) }}
@@ -18,7 +17,7 @@
       {{ render_field(form.new_category) }}
       {{ render_field(form.nsfw) }}
     </dl>
-    <input type="submit" value="Create new board">
+    <input type="submit" value="Edit Board">
   </form>
 </div>
 {% endblock %}

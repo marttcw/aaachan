@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>{{ title }}</title>
+    <title>{{ site_name }} - {{ title }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta charset="utf-8">
@@ -15,7 +15,7 @@
     </div>
     <footer>
       <div>
-        aaachan
+        {{ site_name }}
       </div>
     </footer>
     {% block scripts %}{% endblock %}

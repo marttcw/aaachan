@@ -36,19 +36,19 @@ class Database():
     def create_db(self) -> None:
         self.__cursor.execute("CREATE TABLE IF NOT EXISTS users("+\
                     "id             serial          PRIMARY KEY,"+\
-                    "name           varchar(64)     NOT NULL,"+\
+                    "name           varchar(64)     NOT NULL UNIQUE,"+\
                     "pass           text            NOT NULL,"+\
                     "salt           text            NOT NULL,"+\
                     "type           char(1)         NOT NULL"+\
                 ");")
         self.__cursor.execute("CREATE TABLE IF NOT EXISTS categories("+\
                     "id             serial          PRIMARY KEY,"+\
-                    "name           text            NOT NULL"+\
+                    "name           text            NOT NULL UNIQUE"+\
                 ");")
         self.__cursor.execute("CREATE TABLE IF NOT EXISTS boards("+\
                     "id             serial          PRIMARY KEY,"+\
-                    "directory      varchar(64)     NOT NULL,"+\
-                    "name           varchar(128)    NOT NULL,"+\
+                    "directory      varchar(64)     NOT NULL UNIQUE,"+\
+                    "name           varchar(128)    NOT NULL UNIQUE,"+\
                     "description    text            NOT NULL,"+\
                     "type           char(1)         NOT NULL,"+\
                     "next_id        bigint          NOT NULL,"+\
@@ -62,13 +62,13 @@ class Database():
         self.__cursor.execute("CREATE TABLE IF NOT EXISTS files("+\
                     "id             serial          PRIMARY KEY,"+\
                     "filepath       text            NOT NULL,"+\
-                    "storepath      text            NOT NULL,"+\
+                    "storepath      text            NOT NULL UNIQUE,"+\
                     "thumbpath      text"
                 ");")
         self.__cursor.execute("CREATE TABLE IF NOT EXISTS threads("+\
                     "id             serial          PRIMARY KEY,"+\
-                    "board_id       int,"+\
-                    "post_id        bigint,"+\
+                    "board_id       int             NOT NULL,"+\
+                    "post_id        bigint          NOT NULL,"+\
                     "title          varchar(256)    NOT NULL,"+\
                     "content        text            NOT NULL,"+\
                     "file_id        int,"+\
@@ -85,8 +85,8 @@ class Database():
                 ");")
         self.__cursor.execute("CREATE TABLE IF NOT EXISTS posts("+\
                     "id             serial          PRIMARY KEY,"+\
-                    "thread_id      int,"+\
-                    "post_id        bigint,"+\
+                    "thread_id      int             NOT NULL,"+\
+                    "post_id        bigint          NOT NULL,"+\
                     "title          varchar(256)    NOT NULL,"+\
                     "content        text            NOT NULL,"+\
                     "file_id        int,"+\
@@ -315,8 +315,22 @@ class Database():
                 (directory, name, description, btype, 1, category_id, nsfw))
         self.__conn.commit()
 
+    def edit_board(self, directory: str, name: str, description: str,
+            btype: str, category_id: int, nsfw: bool) -> None:
+        self.__cursor.execute("UPDATE boards SET"+\
+                " name = %s,"+\
+                " description = %s,"+\
+                " type = %s,"+\
+                " category_id = %s,"+\
+                " nsfw = %s"+\
+                " WHERE directory = %s;",
+                (name, description, btype, category_id, nsfw, directory))
+        self.__conn.commit()
+
     def get_board(self, directory: str) -> dict:
-        self.__cursor.execute("SELECT name, description FROM boards WHERE directory = %s;", (directory,))
+        self.__cursor.execute("SELECT name, description, type, next_id, nsfw, category_id"+\
+                " FROM boards WHERE directory = %s;",
+                (directory,))
         sql_list = self.__cursor.fetchall()
         if len(sql_list) == 0:
             return {
@@ -327,11 +341,15 @@ class Database():
             return {
                     'exists': True,
                     'name': board[0],
-                    'description': board[1]
+                    'description': board[1],
+                    'type': board[2],
+                    'next_id': board[3],
+                    'nsfw': bool(board[4]),
+                    'category_id': int(board[5])
             }
 
     def get_boards(self) -> list:
-        self.__cursor.execute("SELECT boards.directory, boards.name,"+\
+        self.__cursor.execute("SELECT boards.directory, boards.name, boards.nsfw,"+\
                     " categories.id, categories.name"+\
                 " FROM boards INNER JOIN categories"+\
                 " ON boards.category_id = categories.id"+\
@@ -341,18 +359,19 @@ class Database():
         cur_cat_list = []
         prev_cat_id = -1
         for row in sql_list:
-            cur_cat_id = int(row[2])
+            cur_cat_id = int(row[3])
             if prev_cat_id != cur_cat_id:
                 # Create category
                 ret_list.append({
-                    'name': row[3],
+                    'name': row[4],
                     'boards': []
                 })
 
             # Append board to current category
             ret_list[-1]['boards'].append({
                 'dir': row[0],
-                'name': row[1]
+                'name': row[1],
+                'nsfw': bool(row[2])
             })
 
             prev_cat_id = cur_cat_id

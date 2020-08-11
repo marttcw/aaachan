@@ -40,7 +40,7 @@ class NewBoardForm(FlaskForm):
     new_category = StringField('New Category (Created if selected)', [
     ])
 
-    nswf = BooleanField('NSFW')
+    nsfw = BooleanField('NSFW')
 
 class LoginForm(FlaskForm):
     username = StringField('Username', [
@@ -76,4 +76,28 @@ class NewPostForm(FlaskForm):
     # Honeypots
     name = StringField('Name')
     message = TextAreaField('Message')
+
+class EditBoardForm(FlaskForm):
+    name = StringField('Name', [
+        DataRequired(),
+        Length(min=1, max=256)
+    ])
+    description = TextAreaField('Description')
+
+    btype = SelectField('Type', [
+            DataRequired()
+        ], choices=[
+            ('i', 'Imageboard'),
+            ('t', 'Textboard'),
+            ('b', 'Booru')
+        ])
+
+    category = SelectField('Category', [
+            DataRequired()
+        ], coerce=int)
+
+    new_category = StringField('New Category (Created if selected)', [
+    ])
+
+    nsfw = BooleanField('NSFW')
 

@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% set title = "aaachan - board" %}
+{% set title = "Board" %}
 {% block scripts %}
   <script src="{{ url_for('static', filename='js/thread.js') }}"></script>
 {% endblock %}
@@ -8,16 +8,13 @@
   <div class="links">
     {% from "_boardslink.html" import boards_links %}
     {{ boards_links(boards_list) }}
-    <p class="others">
-      [<a href="/">Home</a>]
-    </p>
   </div>
   <h2>/{{ board_dir }}/ - {{ board_name }}</h2>
   <p>
     {{ board_desc }}
   </p>
 
-  <div>
+  <div class="thread_nav">
     [<a href="/board/{{ board_dir }}/">Return</a>]
     [<a href="#bottom">Bottom</a>]
     [<a href="#reply_thread">Reply</a>]
@@ -74,7 +71,7 @@
     </form>
   </div>
 
-  <div>
+  <div class="thread_nav">
     [<a href="/board/{{ board_dir }}/">Return</a>]
     [<a href="#top">Top</a>]
   </div>

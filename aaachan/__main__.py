@@ -5,7 +5,7 @@ from werkzeug.utils import secure_filename
 import os
 
 from .database import Database
-from .forms import SetupForm, NewBoardForm, LoginForm, NewThreadForm, NewPostForm
+from .forms import SetupForm, NewBoardForm, LoginForm, NewThreadForm, NewPostForm, EditBoardForm
 from .config import Config
 from .sessions import Sessions
 from .thumbnail import Thumbnail
@@ -72,7 +72,7 @@ def new_board():
                     form.description.data,
                     form.btype.data,
                     cat_id,
-                    form.nswf.data)
+                    form.nsfw.data)
             flash('New board created')
             return redirect(url_for('new_board'))
         else:
@@ -80,6 +80,62 @@ def new_board():
             return render_template('new_board.html', form=form)
     else:
         return render_template('new_board.html', form=form)
+
+@app.route('/edit_board/<board_dir>/', methods=['GET', 'POST'])
+def edit_board(board_dir: str):
+    if not sessions.exists(session['id']):
+        flash('Error')
+        return redirect(url_for('index'))
+
+    form = EditBoardForm(request.form)
+    form.category.choices = db.get_categories_select()
+    if request.method == 'POST':
+        # Submitting form for new board
+        if form.validate():
+            if form.category.data == -1:
+                if form.new_category.data.strip() == '':
+                    flash('Need a name for the new category')
+                    return render_template('edit_board.html', form=form)
+                else:
+                    # Create category
+                    cat_id = db.new_category(form.new_category.data)
+            else:
+                cat_id = int(form.category.data)
+
+            # Edit board
+            db.edit_board(board_dir,
+                    form.name.data,
+                    form.description.data,
+                    form.btype.data,
+                    cat_id,
+                    form.nsfw.data)
+            flash('Board updated')
+        else:
+            flash('Board edit not accepted')
+    else:
+        board_info = db.get_board(board_dir)
+        if board_info['exists']:
+            # Fill in the data required to edit
+            form.name.data = board_info['name']
+            form.description.data = board_info['description']
+            form.btype.data = board_info['type']
+            form.nsfw.data = board_info['nsfw']
+            form.category.data = board_info['category_id']
+        else:
+            flash('Board does not exists')
+            return redirect(url_for('dashboard'))
+    return render_template('edit_board.html',
+            form=form,
+            board_dir=board_dir)
+
+@app.route('/edit_board', methods=['GET'])
+def edit_board_overview():
+    if sessions.exists(session['id']):
+        return render_template('edit_board_overview.html',
+                categories=db.get_boards())
+    else:
+        flash('Error')
+        return redirect(url_for('index'))
 
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
@@ -274,6 +330,12 @@ def index():
         return render_template('homepage.html',
                 categories=db.get_boards(),
                 site_name=config.get()['site']['name'])
+
+@app.context_processor
+def inject_global_vars():
+    return dict(
+            site_name = config.get()['site']['name']
+    )
 
 def main():
     global new, allowed_extensions

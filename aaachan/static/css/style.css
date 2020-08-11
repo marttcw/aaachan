@@ -42,20 +42,25 @@ div.thread div.flex_row, div.post div.flex_row {
 div.thread div.image img, div.post div.image img {
   max-width: 300px;
   max-height: 300px;
+  margin: 0 auto;
+  display: block;
 }
 
 div.thread div.image, div.post div.image {
   float: left;
   padding: 1em;
   background-color: #DDD;
-  flex: 1;
+  width: 250px;
+  flex-grow: 1;
+  word-wrap: break-word;
+  margin: 0 auto;
 }
 
 div.thread div.content, div.post div.content {
   float: left;
   padding: 1em;
   background-color: #CCC;
-  flex: 3 300px;
+  flex: 4 300px;
 }
 
 footer {
@@ -92,5 +97,48 @@ span.quotetext {
 
 .misc {
   display: none;
+}
+
+span.nsfw_tag {
+  color: red;
+}
+
+input[type=submit] {
+  background-color: #003d66;
+  color: #fff;
+  padding: 10px 8px;
+  border: 2px solid #003d66;
+  border-radius: 4px;
+  min-width: 6em;
+}
+
+input[type=submit]:hover {
+  background-color: #007acc;
+  border-color: #007acc;
+}
+
+input[type=text], textarea, input[type=file] {
+  width: 100%;
+  padding: 10px 8px;
+  margin: 8px;
+  box-sizing: border-box;
+  border: 2px solid #AAA;
+  border-radius: 4px;
+}
+
+input[type=text]:focus, textarea:focus {
+  border: 2px solid #000;
+}
+
+div.thread_nav {
+  padding: 10px 8px;
+}
+
+a {
+  color: #003d66;
+}
+
+a:hover {
+  color: #007acc;
 }
 
