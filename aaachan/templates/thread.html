@@ -1,5 +1,8 @@
 {% extends 'base.html' %}
 {% set title = "aaachan - board" %}
+{% block scripts %}
+  <script src="{{ url_for('static', filename='js/thread.js') }}"></script>
+{% endblock %}
 {% block content %}
 <div>
   <div class="links">
@@ -21,7 +24,7 @@
 
   <div>
     {% for post in thread_posts %}
-      <div class="post">
+      <div class="post" id="post_{{ post.id }}">
         <div class="flex_row">
           {% if post.filepath %}
             <div class="image">
@@ -33,7 +36,9 @@
             <div class="post_info">
               <h4>{{ post.title }}</h4>
               <p>
-                {{ post.id }} - {{ post.timestamp }}
+                <a href="#post_{{ post.id }}">{{ post.id }}</a>
+                - {{ post.timestamp }}
+                [<a href="javascript:quote({{ post.id }});">Quote</a>]
               </p>
             </div>
             {{ post.content }}

@@ -86,3 +86,7 @@ div.listed_threads {
   margin-bottom: 25px;
 }
 
+span.quotetext {
+  color: green;
+}
+

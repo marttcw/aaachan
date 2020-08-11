@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, flash, redirect, url_for, session, send_from_directory
+from flask import Flask, render_template, request, flash, redirect, url_for, session, send_from_directory, Markup
 from flask_minify import minify
 from werkzeug.utils import secure_filename
 
@@ -9,6 +9,7 @@ from .forms import SetupForm, NewBoardForm, LoginForm, NewThreadForm, NewPostFor
 from .config import Config
 from .sessions import Sessions
 from .thumbnail import Thumbnail
+from .processing import Processing
 
 app = Flask(__name__)
 db = Database()
@@ -122,6 +123,10 @@ def new_post(board_dir: str, thread_id: int):
 
     form = NewPostForm()
     if form.validate_on_submit():
+        if not Processing().allowed_content(form.content.data):
+            flash('Error, disallowed content')
+            return redirect(url_for('thread', board_dir=board_dir, thread_id=thread_id))
+
         filename = ''
         storepath = ''
         thumbpath = ''
@@ -174,9 +179,10 @@ def new_thread(board_dir: str):
 
     form = NewThreadForm()
     if form.validate_on_submit():
-        print("Title:", form.title.data)
-        print("Options:", form.options.data)
-        print("Content:", form.content.data)
+        if not Processing().allowed_content(form.content.data):
+            flash('Error, disallowed content')
+            return redirect(url_for('board', board_dir=board_dir))
+
         image = form.image.data
         if image.filename == '':
             flash('No file selected')
@@ -214,7 +220,11 @@ def thread(board_dir: str, thread_id: int):
         flash('Board does not exists')
         return redirect(url_for('index'))
 
+    # Posts in the thread
     thread_posts = db.get_thread_posts(board_dir, thread_id)
+    for post in thread_posts:
+        post['content'] = Markup(Processing().text_to_html(post['content']))
+
     new_post_form = NewPostForm()
     return render_template('thread.html',
             board_dir=board_dir,
@@ -235,6 +245,8 @@ def board(board_dir: str):
     new_thread_form = NewThreadForm()
 
     threads_list = db.get_threads(board_dir)
+    for thread in threads_list:
+        thread['content'] = Markup(Processing().text_to_html(thread['content']))
 
     return render_template('board.html',
             board_dir=board_dir,
