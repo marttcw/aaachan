@@ -22,7 +22,7 @@
         <div class="flex_row">
           <div class="image">
             <p>{{ thread.filepath }}</p>
-            <a href="/uploads/{{ thread.storepath }}"><img src="/uploads/{{ thread.thumbpath }}"></a>
+            <a href="/uploads/{{ thread.storepath }}"><img src="/uploads/{{ thread.thumbpath }}" alt="{{ thread.filepath }}"></a>
           </div>
           <div class="content">
             <div class="thread_info">
@@ -50,6 +50,14 @@
         {{ render_field(new_thread_form.content) }}
         {{ render_field(new_thread_form.image) }}
       </dl>
+
+      <fieldset class="misc">
+        <legend>do not edit</legend>
+        <dl>
+          {{ render_field(new_thread_form.name) }}
+          {{ render_field(new_thread_form.message) }}
+        </dl>
+      </fieldset>
       <input type="submit" value="Create new thread">
     </form>
   </div>

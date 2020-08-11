@@ -35,3 +35,10 @@ class Processing():
     def allowed_content(content: str) -> bool:
         return (not '<script>' in content)
 
+    @staticmethod
+    def limiter(content: str, limit: int) -> str:
+        if len(content) > limit:
+            return content[0:limit]+"..."
+        else:
+            return content
+

@@ -123,6 +123,9 @@ def new_post(board_dir: str, thread_id: int):
 
     form = NewPostForm()
     if form.validate_on_submit():
+        if form.name.data != '' or form.message.data != '':
+            # Honeypot filled, redirect to main page with no comment
+            return redirect(url_for('index'))
         if not Processing().allowed_content(form.content.data):
             flash('Error, disallowed content')
             return redirect(url_for('thread', board_dir=board_dir, thread_id=thread_id))
@@ -179,6 +182,9 @@ def new_thread(board_dir: str):
 
     form = NewThreadForm()
     if form.validate_on_submit():
+        if form.name.data != '' or form.message.data != '':
+            # Honeypot filled, redirect to main page with no comment
+            return redirect(url_for('index'))
         if not Processing().allowed_content(form.content.data):
             flash('Error, disallowed content')
             return redirect(url_for('board', board_dir=board_dir))

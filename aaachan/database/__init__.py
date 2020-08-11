@@ -4,12 +4,6 @@ from .timestamp import Timestamp
 
 PSYCOPGPREFIX = "psycopg2 msg: "
 
-def filepath_limit(filepath: str, limit: int) -> str:
-    if len(filepath) > limit:
-        return filepath[0:limit]+"..."
-    else:
-        return filepath
-
 class Database():
     def __init__(self):
         self.__conn = None
@@ -388,6 +382,22 @@ class Database():
             ))
 
         return categories_list
+
+    def get_newest_ten(self) -> list:
+        self.__cursor.execute("SELECT"+\
+                " boards.directory, posts.ts, posts.content FROM posts"+\
+                " LEFT JOIN threads ON posts.thread_id = threads.id"+\
+                " LEFT JOIN boards ON threads.board_id = boards.id"+\
+                " ORDER BY ts DESC FETCH FIRST 10 ROWS ONLY;")
+        sql_list = self.__cursor.fetchall()
+        newest_list = []
+        for row in sql_list:
+            newest_list.append({
+                'directory': row[0],
+                'timestamp': row[1],
+                'content': row[2]
+            })
+        return newest_list
 
     def close(self) -> None:
         print(PSYCOPGPREFIX+"Closing session...")

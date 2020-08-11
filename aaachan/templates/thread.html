@@ -20,21 +20,24 @@
   <div>
     [<a href="/board/{{ board_dir }}/">Return</a>]
     [<a href="#bottom">Bottom</a>]
+    [<a href="#reply_thread">Reply</a>]
   </div>
 
-  <div>
+  <div class="listed_posts">
     {% for post in thread_posts %}
       <div class="post" id="post_{{ post.id }}">
         <div class="flex_row">
           {% if post.filepath %}
             <div class="image">
               <p>{{ post.filepath }}</p>
-              <a href="/uploads/{{ post.storepath }}"><img src="/uploads/{{ post.thumbpath }}"></a>
+              <a href="/uploads/{{ post.storepath }}"><img src="/uploads/{{ post.thumbpath }}" alt="{{ post.filepath }}"></a>
             </div>
           {% endif %}
           <div class="content">
             <div class="post_info">
-              <h4>{{ post.title }}</h4>
+              {% if post.title %}
+                <h4>{{ post.title }}</h4>
+              {% endif %}
               <p>
                 <a href="#post_{{ post.id }}">{{ post.id }}</a>
                 - {{ post.timestamp }}
@@ -48,7 +51,7 @@
     {% endfor %}
   </div>
 
-  <div>
+  <div id="reply_thread">
     <h3>Reply to thread No.{{ thread_id }}</h3>
     {% from "_formhelpers.html" import render_field %}
     <form method="post" action="/board/{{ board_dir }}/thread/{{ thread_id }}/new_post" enctype="multipart/form-data">
@@ -59,6 +62,14 @@
         {{ render_field(new_post_form.content) }}
         {{ render_field(new_post_form.image) }}
       </dl>
+
+      <fieldset class="misc">
+        <legend>do not edit</legend>
+        <dl>
+          {{ render_field(new_post_form.name) }}
+          {{ render_field(new_post_form.message) }}
+        </dl>
+      </fieldset>
       <input type="submit" value="Post">
     </form>
   </div>

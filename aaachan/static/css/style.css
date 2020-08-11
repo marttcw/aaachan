@@ -22,7 +22,7 @@ div.flash {
   padding: 1em;
 }
 
-div.new_thread {
+div.new_thread, div#reply_thread {
   margin: 0 auto;
   background-color: #DDD;
   padding: 1em;
@@ -82,11 +82,15 @@ div.links p.others {
   float: right;
 }
 
-div.listed_threads {
+div.listed_threads, div.listed_posts {
   margin-bottom: 25px;
 }
 
 span.quotetext {
   color: green;
+}
+
+.misc {
+  display: none;
 }
 

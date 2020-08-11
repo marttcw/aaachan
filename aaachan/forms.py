@@ -61,6 +61,10 @@ class NewThreadForm(FlaskForm):
     ])
     image = FileField('Image file', [FileRequired()])
 
+    # Honeypots
+    name = StringField('Name')
+    message = TextAreaField('Message')
+
 class NewPostForm(FlaskForm):
     title = StringField('Title')
     options = StringField('Options')
@@ -68,4 +72,8 @@ class NewPostForm(FlaskForm):
         DataRequired()
     ])
     image = FileField('Image file')
+
+    # Honeypots
+    name = StringField('Name')
+    message = TextAreaField('Message')
 
