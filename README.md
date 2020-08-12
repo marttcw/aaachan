@@ -29,8 +29,13 @@ Imageboard written in Python + Flask and uses PostgreSQL for database
 * Either: `pip install -r requirements.txt` or `pip install Flask Flask-Minify psycopg2 wtforms flask_wtf Pillow pytest sphinx sphinx-autodoc-typehints`
 
 ### Running without installation
+
+#### Using `flask run`
+* `export FLASK_APP=aaachan`
+* `flask run`
+
+#### Directly as a package
 * `python -m aaachan`
-* This will run the local web server
 
 ## Setup
 * When the web server setups up the first time, it will just go straight to the `setup/` page

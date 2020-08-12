@@ -17,3 +17,14 @@ class Timestamp():
                 datetime.strptime(before, '%Y-%m-%d %H:%M:%S')
                 ).total_seconds()
 
+    @staticmethod
+    def diff_str(before: str, seconds: int) -> str:
+        delta_ts = seconds - (Timestamp().now_dt() -
+                datetime.strptime(before, '%Y-%m-%d %H:%M:%S')
+                ).total_seconds()
+
+        mins = int((delta_ts % 3600) // 60)
+        secs = int(delta_ts % 60)
+
+        return '{:02d}:{:02d}'.format(mins, secs)
+

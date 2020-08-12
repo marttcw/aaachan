@@ -31,3 +31,9 @@ class IpSessions():
         self.__setup(ip_addr)
         return Timestamp.passed(self.__ips[ip_addr]['post_limit'], self.__secs_post_lim)
 
+    def time_length_thread(self, ip_addr: str) -> str:
+        return Timestamp.diff_str(self.__ips[ip_addr]['thread_limit'], self.__secs_thr_lim)
+
+    def time_length_post(self, ip_addr: str) -> str:
+        return Timestamp.diff_str(self.__ips[ip_addr]['post_limit'], self.__secs_post_lim)
+

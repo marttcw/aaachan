@@ -10,3 +10,12 @@ def test_thread_limit_not_posted():
     ip_sessions = IpSessions()
     assert ip_sessions.allow_thread('192.168.1.1') == True
 
+def test_post_limit_posted():
+    ip_sessions = IpSessions()
+    ip_sessions.start_post_limit('192.168.1.1')
+    assert ip_sessions.allow_post('192.168.1.1') == False
+
+def test_post_limit_not_posted():
+    ip_sessions = IpSessions()
+    assert ip_sessions.allow_post('192.168.1.1') == True
+

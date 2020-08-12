@@ -427,6 +427,8 @@ class Database():
 
     def close(self) -> None:
         print(PSYCOPGPREFIX+"Closing session...")
-        self.__cursor.close()
-        self.__conn.close()
+        if self.__cursor != None:
+            self.__cursor.close()
+        if self.__conn != None:
+            self.__conn.close()
 
