@@ -10,12 +10,14 @@ from .config import Config
 from .sessions import Sessions
 from .thumbnail import Thumbnail
 from .processing import Processing
+from .ip_sessions import IpSessions
 
 app = Flask(__name__)
 db = Database()
 config = Config()
 sessions = Sessions()
 thumbnail = Thumbnail()
+ip_sessions = IpSessions()
 
 new = True
 allowed_extensions = ['png', 'jpg', 'jpeg', 'gif']
@@ -24,6 +26,12 @@ minify(app=app, html=True, js=True, cssless=True)
 
 @app.route('/setup', methods=['GET', 'POST'])
 def setup():
+    """
+    Setup page
+
+    Returns:
+       response: Flask response
+    """
     global new
 
     if new:

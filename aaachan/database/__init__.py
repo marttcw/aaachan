@@ -1,6 +1,6 @@
 import psycopg2
 from .login import Login
-from .timestamp import Timestamp
+from ..timestamp import Timestamp
 
 PSYCOPGPREFIX = "psycopg2 msg: "
 

@@ -19,5 +19,5 @@ class Sessions():
         return sid in self.__sessions
 
     def remove(self, sid: str):
-        self.__sessions.remove(sid)
+        self.__sessions.pop(sid, None)
 
