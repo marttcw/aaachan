@@ -1,3 +1,5 @@
+:orphan:
+
 aaachan
 =======
 
@@ -5,3 +7,4 @@ aaachan
    :maxdepth: 4
 
    aaachan
+

@@ -10,6 +10,13 @@ class Database():
         self.__cursor = None
 
     def open(self, host: str, dbname: str, user: str, password: str) -> None:
+        """Opens the database for processing
+
+        :param host: PostgreSQL hostname
+        :param dbname: PostgreSQL database name
+        :param user: PostgreSQL database username
+        :param password: PostgreSQL database password
+        """
         try:
             self.__conn = psycopg2.connect(host=host,
                     database=dbname,

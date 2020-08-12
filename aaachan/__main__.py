@@ -26,12 +26,6 @@ minify(app=app, html=True, js=True, cssless=True)
 
 @app.route('/setup', methods=['GET', 'POST'])
 def setup():
-    """
-    Setup page
-
-    Returns:
-       response: Flask response
-    """
     global new
 
     if new:
