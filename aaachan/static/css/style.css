@@ -22,6 +22,10 @@ div.flash {
   padding: 1em;
 }
 
+div.listed_threads, div.listed_posts {
+  margin-bottom: 25px;
+}
+
 div.new_thread, div#reply_thread {
   margin: 0 auto;
   background-color: #DDD;
@@ -54,13 +58,23 @@ div.thread div.image, div.post div.image {
   flex-grow: 1;
   word-wrap: break-word;
   margin: 0 auto;
+  margin-right: 1em;
 }
 
 div.thread div.content, div.post div.content {
   float: left;
   padding: 1em;
+  padding-left: 0;
   background-color: #CCC;
   flex: 4 300px;
+}
+
+div.content_main {
+  padding: 0em 1em;
+}
+
+div.thread_info, div.post_info {
+  display: inline-block;
 }
 
 footer {
@@ -85,10 +99,6 @@ div.links p.boards {
 
 div.links p.others {
   float: right;
-}
-
-div.listed_threads, div.listed_posts {
-  margin-bottom: 25px;
 }
 
 span.quotetext {

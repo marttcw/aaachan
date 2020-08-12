@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, flash, redirect, url_for, session, send_from_directory, Markup
+from flask import Flask, render_template, request, flash, redirect, url_for, session, send_from_directory
 from flask_minify import minify
 from werkzeug.utils import secure_filename
 
@@ -284,8 +284,17 @@ def thread(board_dir: str, thread_id: int):
 
     # Posts in the thread
     thread_posts = db.get_thread_posts(board_dir, thread_id)
+    post_map = {}
+    quote_links = []
     for post in thread_posts:
-        post['content'] = Markup(Processing().text_to_html(post['content']))
+        post['content'], quote_list = Processing().text_to_html(post['content'], post['id'])
+        quote_links += quote_list
+        post['quotes'] = set()
+        post_map[str(post['id'])] = post
+
+    # Link up quoting
+    for link in quote_links:
+        post_map[str(link['target'])]['quotes'].add(link['by'])
 
     new_post_form = NewPostForm()
     return render_template('thread.html',
@@ -308,7 +317,7 @@ def board(board_dir: str):
 
     threads_list = db.get_threads(board_dir)
     for thread in threads_list:
-        thread['content'] = Markup(Processing().text_to_html(thread['content']))
+        thread['content'], _ = Processing().text_to_html(thread['content'], thread['id'])
 
     return render_template('board.html',
             board_dir=board_dir,

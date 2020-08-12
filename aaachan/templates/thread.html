@@ -24,24 +24,32 @@
     {% for post in thread_posts %}
       <div class="post" id="post_{{ post.id }}">
         <div class="flex_row">
-          {% if post.filepath %}
-            <div class="image">
-              <p>{{ post.filepath }}</p>
-              <a href="/uploads/{{ post.storepath }}"><img src="/uploads/{{ post.thumbpath }}" alt="{{ post.filepath }}"></a>
-            </div>
-          {% endif %}
           <div class="content">
-            <div class="post_info">
-              {% if post.title %}
-                <h4>{{ post.title }}</h4>
-              {% endif %}
-              <p>
-                <a href="#post_{{ post.id }}">{{ post.id }}</a>
-                - {{ post.timestamp }}
-                [<a href="javascript:quote({{ post.id }});">Quote</a>]
-              </p>
+            {% if post.filepath %}
+              <div class="image">
+                <p>{{ post.filepath }}</p>
+                <a href="/uploads/{{ post.storepath }}"><img src="/uploads/{{ post.thumbpath }}" alt="{{ post.filepath }}"></a>
+              </div>
+            {% endif %}
+            <div class="content_main">
+              <div class="post_info">
+                {% if post.title %}
+                  <h4>{{ post.title }}</h4>
+                {% endif %}
+                <p>
+                  <a href="#post_{{ post.id }}">{{ post.id }}</a>
+                  - {{ post.timestamp }}
+                  [<a href="javascript:quote({{ post.id }});">Quote</a>]
+                  {% if post.quotes %}
+                    {% for quote in post.quotes %}
+                      <a href="#post_{{ quote }}">&#62;&#62;{{ quote }}</a>
+                    {% endfor %}
+                  {% endif %}
+                </p>
+              </div>
+              <br>
+              {{ post.content }}
             </div>
-            {{ post.content }}
           </div>
         </div>
       </div>

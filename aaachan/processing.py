@@ -1,7 +1,10 @@
+from flask import Markup
+
 class Processing():
     @staticmethod
-    def text_to_html(content: str) -> str:
+    def text_to_html(content: str, current_id: str) -> (str, list):
         html_str = ''
+        quote_list = []
         for line in content.splitlines():
             fline = ''
             first = True
@@ -11,8 +14,13 @@ class Processing():
                 if word.startswith('>>'):
                     maybe_quote = word[2:]
                     if maybe_quote.isdigit():
+                        # Quote detected, link it and add to quote_list
                         fline += '<a href="#post_'+maybe_quote+\
                                 '">&#62;&#62;'+maybe_quote+'</a> '
+                        quote_list.append({
+                            'target' : maybe_quote,
+                            'by' : current_id
+                        })
                         if first:
                             first_is_quote = True
                     else:
@@ -29,7 +37,7 @@ class Processing():
             else:
                 html_str += fline
             html_str += '<br>'
-        return html_str
+        return (Markup(html_str), quote_list)
 
     @staticmethod
     def allowed_content(content: str) -> bool:
