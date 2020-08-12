@@ -3,7 +3,7 @@
   {% for category in categories %}
     [
     {% for board in category.boards %}
-      <a href="/board/{{ board.dir }}">{{ board.dir }}</a>
+      <a href="{{ url_for('board', board_dir=board.dir) }}">{{ board.dir }}</a>
       {% if board != category.boards|last %}
       /
       {% endif %}
@@ -12,7 +12,7 @@
   {% endfor %}
 </p>
 <p class="others">
-  [ <a href="/">Home</a> ]
+  [ <a href="{{ url_for('index') }}">Home</a> ]
 </p>
 {% endmacro %}
 

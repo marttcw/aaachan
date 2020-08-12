@@ -30,8 +30,11 @@ class Database():
             print(PSYCOPGPREFIX+" "+str(e))
             print(PSYCOPGPREFIX+"Unable to connect to the database.")
 
-    # Only use this during development, never in production/release
     def delete_db(self) -> None:
+        """Only use this during development, never in production/release
+        """
+        self.__cursor.execute("DROP TABLE IF EXISTS bans;")
+        self.__cursor.execute("DROP TABLE IF EXISTS reports;")
         self.__cursor.execute("DROP TABLE IF EXISTS users;")
         self.__cursor.execute("DROP TABLE IF EXISTS posts;")
         self.__cursor.execute("DROP TABLE IF EXISTS threads;")
@@ -81,6 +84,7 @@ class Database():
                     "file_id        int,"+\
                     "ts_op          timestamp       NOT NULL,"+\
                     "ts_bump        timestamp       NOT NULL,"+\
+                    "ip_address     text            NOT NULL,"+\
                     "CONSTRAINT fk_board_id "+\
                         "FOREIGN KEY(board_id) "+\
                             "REFERENCES boards(id) "+\
@@ -98,6 +102,7 @@ class Database():
                     "content        text            NOT NULL,"+\
                     "file_id        int,"+\
                     "ts             timestamp       NOT NULL,"+\
+                    "ip_address     text            NOT NULL,"+\
                     "CONSTRAINT fk_thread_id "+\
                         "FOREIGN KEY(thread_id) "+\
                             "REFERENCES threads(id) "+\
@@ -105,6 +110,33 @@ class Database():
                     "CONSTRAINT fk_file_id "+\
                         "FOREIGN KEY(file_id) "+\
                             "REFERENCES files(id) "+\
+                            "ON DELETE CASCADE"+\
+                ");")
+        self.__cursor.execute("CREATE TABLE IF NOT EXISTS bans("+\
+                    "id             serial          PRIMARY KEY,"+\
+                    "ip_address     text            NOT NULL,"+\
+                    "reason         text            NOT NULL,"+\
+                    "ts_start       timestamp       NOT NULL,"+\
+                    "ts_end         timestamp"+\
+                ");")
+        self.__cursor.execute("CREATE TABLE IF NOT EXISTS reports("+\
+                    "id             serial          PRIMARY KEY,"+\
+                    "board_id       int             NOT NULL,"+\
+                    "thread_id      int,"+\
+                    "post_id        int,"+\
+                    "reason         text            NOT NULL,"+\
+                    "ts             timestamp       NOT NULL,"+\
+                    "CONSTRAINT fk_board_id "+\
+                        "FOREIGN KEY(board_id) "+\
+                            "REFERENCES boards(id) "+\
+                            "ON DELETE CASCADE,"+\
+                    "CONSTRAINT fk_thread_id "+\
+                        "FOREIGN KEY(thread_id) "+\
+                            "REFERENCES threads(id) "+\
+                            "ON DELETE CASCADE,"+\
+                    "CONSTRAINT fk_post_id "+\
+                        "FOREIGN KEY(post_id) "+\
+                            "REFERENCES posts(id) "+\
                             "ON DELETE CASCADE"+\
                 ");")
         self.__conn.commit()
@@ -128,7 +160,8 @@ class Database():
             return Login.match(got_pass, password, got_salt)
 
     def new_thread(self, board_directory: str, title: str, content: str,
-            filepath: str, storepath: str, thumbpath: str) -> bool:
+            filepath: str, storepath: str, thumbpath: str,
+            ip_address: str) -> bool:
         # Fetch board information
         self.__cursor.execute("SELECT id, next_id FROM boards WHERE directory = %s;",
                 (board_directory,))
@@ -153,9 +186,9 @@ class Database():
         # Insert new thread entry
         now_ts = Timestamp.now()
         self.__cursor.execute("INSERT INTO"+\
-                " threads(board_id, post_id, title, content, file_id, ts_op, ts_bump)"+\
-                " VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                (board_id, next_id, title, content, file_id, now_ts, now_ts))
+                " threads(board_id, post_id, title, content, file_id, ts_op, ts_bump, ip_address)"+\
+                " VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                (board_id, next_id, title, content, file_id, now_ts, now_ts, ip_address))
 
         # Update next_id
         self.__cursor.execute("UPDATE boards SET next_id = %s WHERE id = %s;",
@@ -163,7 +196,8 @@ class Database():
         self.__conn.commit()
 
     def new_post(self, board_directory: str, thread_id: int, title: str,
-            content: str, filepath: str, storepath: str, thumbpath: str) -> (bool, str):
+            content: str, filepath: str, storepath: str, thumbpath: str,
+            ip_address: str) -> (bool, str):
         # Fetch board information
         self.__cursor.execute("SELECT id, next_id FROM boards WHERE directory = %s;",
                 (board_directory,))
@@ -201,8 +235,8 @@ class Database():
         # Insert new post entry
         now_ts = Timestamp.now()
         self.__cursor.execute("INSERT INTO"+\
-                " posts(thread_id, post_id, title, content, file_id, ts)"+\
-                " VALUES (%s, %s, %s, %s, %s, %s)",
+                " posts(thread_id, post_id, title, content, file_id, ts, ip_address)"+\
+                " VALUES (%s, %s, %s, %s, %s, %s, %s)",
                 (thread_id_pk, next_id, title, content, file_id, now_ts))
 
         # Update next_id
@@ -424,6 +458,91 @@ class Database():
                 'content': row[2]
             })
         return newest_list
+
+    def new_report(self, board_directory: str, thread_id: int, post_id: int,
+            reason: str) -> (bool, str):
+        """TODO
+        """
+        # Get board_id from directory given
+        self.__cursor.execute("SELECT id FROM boards WHERE directory = %s;",
+                (board_directory,))
+        sql_list = self.__cursor.fetchall()
+        if len(sql_list) == 0:
+            return (False, "Board not Found")
+
+        board_id = int(sql_list[0][0])
+
+        # Get thread/post_id
+        if thread_id == post_id:
+            # Thread report
+            fk_name = 'thread_id'
+            self.__cursor.execute("SELECT id FROM threads"+\
+                    " WHERE post_id = %s AND board_id = %s;",
+                    (post_id, board_id))
+            sql_list = self.__cursor.fetchall()
+            if len(sql_list) == 0:
+                return (False, "Thread not Found")
+            post_db_id = int(sql_list[0][0])
+        else:
+            # Post report
+            fk_name = 'post_id'
+            self.__cursor.execute("SELECT id FROM posts"+\
+                    " WHERE post_id = %s AND thread_id = %s;",
+                    (post_id, thread_id))
+            sql_list = self.__cursor.fetchall()
+            if len(sql_list) == 0:
+                return (False, "Post not Found")
+            post_db_id = int(sql_list[0][0])
+
+        self.__cursor.execute("INSERT INTO reports("+fk_name+", board_id, reason, ts)"+\
+                " VALUES (%s, %s, %s, %s);",
+                (post_db_id, board_id, reason, Timestamp().now()))
+        self.__conn.commit()
+
+        return (True, "")
+
+    def get_reports(self) -> list:
+        self.__cursor.execute("""
+                SELECT reports.ts, boards.directory, boards.name,
+                    reports.reason, threads.content, posts.content,
+                    threads.post_id, posts.post_id
+                FROM reports
+                LEFT JOIN boards
+                    ON reports.board_id = boards.id
+                LEFT JOIN posts
+                    ON reports.post_id = posts.id
+                LEFT JOIN threads
+                    ON reports.thread_id = threads.id
+                        OR posts.thread_id = threads.id
+                ORDER BY reports.ts;
+                """)
+        sql_list = self.__cursor.fetchall()
+        reports_list = []
+
+        for row in sql_list:
+            if row[4] != None:
+                content = row[4]
+                thread_id = row[6]
+                post_id = row[6]
+                ctype = "thread"
+            else:
+                content = row[5]
+                thread_id = row[6]
+                post_id = row[7]
+                ctype = "post"
+
+            reports_list.append({
+                    'timestamp': row[0],
+                    'board_directory': row[1],
+                    'board_name': row[2],
+                    'reason': row[3],
+                    'content': content,
+                    'type': ctype,
+                    'post_id': post_id,
+                    'thread_id': thread_id
+            })
+
+        return reports_list
 
     def close(self) -> None:
         print(PSYCOPGPREFIX+"Closing session...")

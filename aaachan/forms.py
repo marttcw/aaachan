@@ -101,3 +101,9 @@ class EditBoardForm(FlaskForm):
 
     nsfw = BooleanField('NSFW')
 
+class ReportForm(FlaskForm):
+    reason = StringField('Reason', [
+        DataRequired(),
+        Length(min=1, max=256)
+    ])
+

@@ -1,13 +1,13 @@
 from aaachan import app
 
-from flask import Flask, render_template, request, flash, redirect, url_for, session, send_from_directory
+from flask import Flask, render_template, request, flash, redirect, url_for, session, send_from_directory, abort
 from flask_minify import minify
 from werkzeug.utils import secure_filename
 
 import os, atexit
 
 from .database import Database
-from .forms import SetupForm, NewBoardForm, LoginForm, NewThreadForm, NewPostForm, EditBoardForm
+from .forms import SetupForm, NewBoardForm, LoginForm, NewThreadForm, NewPostForm, EditBoardForm, ReportForm
 from .config import Config
 from .sessions import Sessions
 from .thumbnail import Thumbnail
@@ -24,6 +24,14 @@ new = True
 allowed_extensions = ['png', 'jpg', 'jpeg', 'gif']
 
 minify(app=app, html=True, js=True, cssless=True)
+
+@app.errorhandler(404)
+def page_not_found(error):
+    return render_template('404.html'), 404
+
+@app.errorhandler(413)
+def file_too_large(error):
+    return render_template('413.html'), 413
 
 @app.route('/setup', methods=['GET', 'POST'])
 def setup():
@@ -140,6 +148,16 @@ def edit_board_overview():
         flash('Error')
         return redirect(url_for('index'))
 
+@app.route('/config_write')
+def config_write():
+    if sessions.exists(session['id']):
+        config.write()
+        flash('Overwritten config file')
+        return redirect(url_for('dashboard'))
+    else:
+        flash('Error')
+        return redirect(url_for('index'))
+
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
     if sessions.exists(session['id']):
@@ -229,7 +247,8 @@ def new_post(board_dir: str, thread_id: int):
                 form.content.data,
                 filename,
                 storepath,
-                thumbpath)
+                thumbpath,
+                remote_ip_address)
 
         if valid:
             ip_sessions.start_post_limit(remote_ip_address)
@@ -286,7 +305,8 @@ def new_thread(board_dir: str):
                     form.content.data,
                     filename,
                     storepath,
-                    thumbpath)
+                    thumbpath,
+                    remote_ip_address)
 
             ip_sessions.start_thread_limit(remote_ip_address)
             flash('New Thread Created')
@@ -350,6 +370,37 @@ def board(board_dir: str):
 def uploads(filename: str):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
+@app.route('/report/<board_dir>/<thread_id>/<post_id>/', methods=['GET', 'POST'])
+def report_form(board_dir: str, thread_id: int, post_id: int):
+    form = ReportForm(request.form)
+
+    if request.method == "POST":
+        if form.validate():
+            sent, reason = db.new_report(board_dir,
+                    thread_id,
+                    post_id,
+                    form.reason.data)
+
+            if sent:
+                flash('Report sent')
+                return redirect(url_for('board', board_dir=board_dir))
+            else:
+                flash('Report not sent: '+reason)
+        else:
+            flash('Invalid form')
+    return render_template('report.html',
+            form=form,
+            board_dir=board_dir,
+            post_id=post_id)
+
+@app.route('/reports_list/', methods=['GET', 'POST'])
+def reports_list():
+    if 'id' in session and sessions.exists(session['id']):
+        return render_template('reports_list.html',
+                reports_list=db.get_reports())
+    else:
+        abort(403)
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if new:
@@ -359,20 +410,11 @@ def index():
                 categories=db.get_boards(),
                 site_name=config.get()['site']['name'])
 
-@app.errorhandler(404)
-def page_not_found(error):
-    return render_template('404.html'), 404
-
-@app.errorhandler(413)
-def file_too_large(error):
-    return render_template('413.html'), 413
-
 @app.context_processor
 def inject_global_vars():
     return dict(
             site_name = config.get()['site']['name']
     )
-
 
 def close():
     db.close()
@@ -386,9 +428,16 @@ def setup():
             UPLOAD_FOLDER = os.path.abspath('uploads/'),
             MAX_CONTENT_LENGTH = 2 * 1024 * 1024    # 2 MiB
     )
-    db.open('localhost', 'aaachan-db', 'postgres', 'aaachan')
 
     config.read()
+
+    db_set = config.get()['database']
+
+    db.open(db_set['host'],
+            db_set['name'],
+            db_set['user'],
+            db_set['pass'])
+
     if config.get()['site']['name'] != '':
         new = False
     else:

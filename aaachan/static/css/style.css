@@ -127,7 +127,7 @@ input[type=submit]:hover {
   border-color: #007acc;
 }
 
-input[type=text], textarea, input[type=file] {
+input[type=text], textarea, input[type=file], input[type=password] {
   width: 100%;
   padding: 10px 8px;
   margin: 8px;
@@ -136,7 +136,7 @@ input[type=text], textarea, input[type=file] {
   border-radius: 4px;
 }
 
-input[type=text]:focus, textarea:focus {
+input[type=text]:focus, textarea:focus, input[type=password]:focus {
   border: 2px solid #000;
 }
 

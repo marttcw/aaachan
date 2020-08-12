@@ -29,7 +29,7 @@
                 <h4>{{ thread.title }}</h4>
                 <p>
                   {{ thread.id }} - {{ thread.timestamp_op }}
-                  [<a href="/board/{{ board_dir }}/thread/{{ thread.id }}">Enter Thread</a>]
+                  [<a href="{{ url_for('thread', board_dir=board_dir, thread_id=thread.id) }}">Enter Thread</a>]
                 </p>
               </div>
               <br>

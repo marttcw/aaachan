@@ -9,6 +9,12 @@ class Config():
                 'name': '',
                 'description': ''
         }
+        self.__config['database'] = {
+                'host': 'localhost',
+                'name': 'aaachan-db',
+                'user': 'postgres',
+                'pass': 'aaachan'
+        }
 
     def write(self):
         with open(INI_FNAME, 'w') as configfile:

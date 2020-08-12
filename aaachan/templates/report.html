@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% set title = "Report" %}
+{% block content %}
+<div>
+  <h2>Report</h2>
+
+  <p><a href="{{ url_for('board', board_dir=board_dir) }}">Back to /{{ board_dir }}/</a></p>
+
+  <p>
+    Reporting post No.{{ post_id }}...
+  </p>
+  
+  {% from "_formhelpers.html" import render_field %}
+  <form method="post">
+    {{ form.csrf_token }}
+    <dl>
+      {{ render_field(form.reason) }}
+    </dl>
+    <input type="submit" value="Submit Report">
+  </form>
+</div>
+{% endblock %}
+

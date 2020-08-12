@@ -40,6 +40,11 @@
                   <a href="#post_{{ post.id }}">{{ post.id }}</a>
                   - {{ post.timestamp }}
                   [<a href="javascript:quote({{ post.id }});">Quote</a>]
+                  [<a href="{{ url_for('report_form',
+                                        board_dir=board_dir,
+                                        thread_id=thread_id,
+                                        post_id=post.id
+                                        ) }}">Report</a>]
                   {% if post.quotes %}
                     {% for quote in post.quotes %}
                       <a href="#post_{{ quote }}">&#62;&#62;{{ quote }}</a>
