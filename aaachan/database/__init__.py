@@ -237,7 +237,7 @@ class Database():
         self.__cursor.execute("INSERT INTO"+\
                 " posts(thread_id, post_id, title, content, file_id, ts, ip_address)"+\
                 " VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                (thread_id_pk, next_id, title, content, file_id, now_ts))
+                (thread_id_pk, next_id, title, content, file_id, now_ts, ip_address))
 
         # Update next_id
         self.__cursor.execute("UPDATE boards SET next_id = %s WHERE id = %s;",
