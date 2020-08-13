@@ -20,9 +20,15 @@
       <div class="thread">
         <div class="flex_row">
           <div class="content">
-            <div class="image">
-              <p>{{ thread.filepath }}</p>
-              <a href="/uploads/{{ thread.storepath }}"><img src="/uploads/{{ thread.thumbpath }}" alt="{{ thread.filepath }}"></a>
+            <div class="content">
+              {% for file in thread.files %}
+                <div class="image">
+                  <p>{{ file.filepath }}</p>
+                  <a href="/uploads/{{ file.storepath }}">
+                    <img src="/uploads/{{ file.thumbpath }}" alt="{{ file.filepath }}">
+                  </a>
+                </div>
+              {% endfor %}
             </div>
             <div class="content_main">
               <div class="thread_info">
@@ -50,7 +56,7 @@
         {{ render_field(new_thread_form.title) }}
         {{ render_field(new_thread_form.options) }}
         {{ render_field(new_thread_form.content) }}
-        {{ render_field(new_thread_form.image) }}
+        {{ render_field(new_thread_form.files) }}
       </dl>
 
       <fieldset class="misc">

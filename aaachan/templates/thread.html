@@ -25,10 +25,16 @@
       <div class="post" id="post_{{ post.id }}">
         <div class="flex_row">
           <div class="content">
-            {% if post.filepath %}
-              <div class="image">
-                <p>{{ post.filepath }}</p>
-                <a href="/uploads/{{ post.storepath }}"><img src="/uploads/{{ post.thumbpath }}" alt="{{ post.filepath }}"></a>
+            {% if post.has_files %}
+              <div class="content">
+                {% for file in post.files %}
+                  <div class="image">
+                    <p>{{ file.filepath }}</p>
+                    <a href="/uploads/{{ file.storepath }}">
+                      <img src="/uploads/{{ file.thumbpath }}" alt="{{ file.filepath }}">
+                    </a>
+                  </div>
+                {% endfor %}
               </div>
             {% endif %}
             <div class="content_main">

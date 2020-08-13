@@ -282,31 +282,50 @@ def new_thread(board_dir: str):
             flash('Error, disallowed content')
             return redirect(url_for('board', board_dir=board_dir))
 
-        image = form.image.data
-        if image.filename == '':
+        invalid_files = False
+        files_list = []
+
+        for fi in form.files.data:
+            if allowed_file(fi.filename):
+                files_list.append(fi)
+            else:
+                flash('Invalid file: '+fi.filename)
+                invalid_files = True
+
+        if files_list == []:
             flash('No file selected')
-        elif not image or not allowed_file(image.filename):
-            flash('Invalid file')
-        else:
-            filename = secure_filename(image.filename)
-            storepath = Thumbnail().store_name(image.filename)
+            invalid_files = True
 
-            # Save image and insert into database
-            fullstorepath = os.path.join(
-                app.config['UPLOAD_FOLDER'], storepath
-            )
-            image.save(fullstorepath)
+        if not invalid_files:
+            fdb_list = []
+            prefix_num: int = 0
 
-            # Generate and save thumbnail
-            thumbpath = thumbnail.generate(fullstorepath)
+            for fi in files_list:
+                filename = secure_filename(fi.filename)
+                storepath = str(prefix_num) + '_' + Thumbnail().store_name(fi.filename)
+
+                # Save image and insert into database
+                fullstorepath = os.path.join(
+                    app.config['UPLOAD_FOLDER'], storepath
+                )
+                fi.save(fullstorepath)
+
+                # Generate and save thumbnail
+                thumbpath = thumbnail.generate(fullstorepath)
+
+                fdb_list.append({
+                    'filepath': filename,
+                    'storepath': storepath,
+                    'thumbpath': thumbpath
+                })
+
+                prefix_num += 1
 
             db.new_thread(board_dir,
                     form.title.data,
                     form.content.data,
-                    filename,
-                    storepath,
-                    thumbpath,
-                    remote_ip_address)
+                    remote_ip_address,
+                    fdb_list)
 
             ip_sessions.start_thread_limit(remote_ip_address)
             flash('New Thread Created')

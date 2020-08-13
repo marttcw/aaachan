@@ -1,7 +1,7 @@
 import re
 from flask_wtf import FlaskForm, RecaptchaField
 from flask_wtf.file import FileField, FileRequired
-from wtforms import Form, BooleanField, StringField, PasswordField, TextAreaField, SelectField
+from wtforms import Form, BooleanField, StringField, PasswordField, TextAreaField, SelectField, MultipleFileField
 from wtforms.validators import Length, DataRequired, EqualTo
 
 class SetupForm(FlaskForm):
@@ -59,7 +59,7 @@ class NewThreadForm(FlaskForm):
     content = TextAreaField('Content', [
         DataRequired()
     ])
-    image = FileField('Image file', [FileRequired()])
+    files = MultipleFileField('Files')
 
     # Honeypots
     name = StringField('Name')
