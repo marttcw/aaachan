@@ -71,7 +71,7 @@ class NewPostForm(FlaskForm):
     content = TextAreaField('Content', [
         DataRequired()
     ])
-    image = FileField('Image file')
+    files = MultipleFileField('Files')
 
     # Honeypots
     name = StringField('Name')

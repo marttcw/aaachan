@@ -214,47 +214,60 @@ def new_post(board_dir: str, thread_id: int):
             flash('Error, disallowed content')
             return redirect(url_for('thread', board_dir=board_dir, thread_id=thread_id))
 
-        filename = ''
-        storepath = ''
-        thumbpath = ''
         title = ''
-        if form.image.data:
-            # If an image was to upload
-            image = form.image.data
-            if image.filename == '' or not allowed_file(image.filename):
-                flash('Error: Invalid file')
-                return redirect(url_for('thread', board_dir=board_dir, thread_id=thread_id))
+        invalid_files = False
+        files_list = []
+
+        for fi in form.files.data:
+            if allowed_file(fi.filename):
+                files_list.append(fi)
+            elif fi.filename == '':
+                break
             else:
-                filename = secure_filename(image.filename)
-                storepath = Thumbnail().store_name(image.filename)
+                flash('Invalid file: '+fi.filename)
+                invalid_files = True
+
+        if not invalid_files:
+            fdb_list = []
+            prefix_num: int = 0
+
+            for fi in files_list:
+                filename = secure_filename(fi.filename)
+                storepath = str(prefix_num) + '_' + Thumbnail().store_name(fi.filename)
 
                 # Save image and insert into database
                 fullstorepath = os.path.join(
                     app.config['UPLOAD_FOLDER'], storepath
                 )
-                image.save(fullstorepath)
+                fi.save(fullstorepath)
 
                 # Generate and save thumbnail
                 thumbpath = thumbnail.generate(fullstorepath)
 
-        if form.title.data:
-            title = form.title.data
+                fdb_list.append({
+                    'filepath': filename,
+                    'storepath': storepath,
+                    'thumbpath': thumbpath
+                })
 
-        # Any valid form
-        valid, error_msg = db.new_post(board_dir,
-                thread_id,
-                title,
-                form.content.data,
-                filename,
-                storepath,
-                thumbpath,
-                remote_ip_address)
+                prefix_num += 1
 
-        if valid:
-            ip_sessions.start_post_limit(remote_ip_address)
-            flash('New post')
-        else:
-            flash('Error no new post: '+error_msg)
+            if form.title.data:
+                title = form.title.data
+
+            # Any valid form
+            valid, error_msg = db.new_post(board_dir,
+                    thread_id,
+                    title,
+                    form.content.data,
+                    remote_ip_address,
+                    fdb_list)
+
+            if valid:
+                ip_sessions.start_post_limit(remote_ip_address)
+                flash('New post')
+            else:
+                flash('Error no new post: '+error_msg)
     else:
         flash('Error, new post not accepted')
     return redirect(url_for('thread', board_dir=board_dir, thread_id=thread_id))
@@ -321,14 +334,17 @@ def new_thread(board_dir: str):
 
                 prefix_num += 1
 
-            db.new_thread(board_dir,
+            valid, error_msg = db.new_thread(board_dir,
                     form.title.data,
                     form.content.data,
                     remote_ip_address,
                     fdb_list)
 
-            ip_sessions.start_thread_limit(remote_ip_address)
-            flash('New Thread Created')
+            if valid:
+                ip_sessions.start_thread_limit(remote_ip_address)
+                flash('New Thread Created')
+            else:
+                flash('Error: '+error_msg)
     else:
         flash('Error, new thread not accepted')
     return redirect(url_for('board', board_dir=board_dir))

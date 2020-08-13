@@ -210,7 +210,7 @@ class Database():
             self.__cursor.execute("INSERT INTO"+\
                     " posts_files(thread_id, file_id)"+\
                     " VALUES(%s, %s);",
-                    (thread_id, file_id))
+                    (board_id, thread_id, file_id))
 
         # Update next_id
         self.__cursor.execute("UPDATE boards SET next_id = %s WHERE id = %s;",
@@ -219,8 +219,7 @@ class Database():
         return (True, "")
 
     def new_post(self, board_directory: str, thread_id: int, title: str,
-            content: str, filepath: str, storepath: str, thumbpath: str,
-            ip_address: str) -> (bool, str):
+            content: str, ip_address: str, files_list: list) -> (bool, str):
         # Fetch board information
         self.__cursor.execute("SELECT id, next_id FROM boards WHERE directory = %s;",
                 (board_directory,))
@@ -240,20 +239,19 @@ class Database():
             return (False, "Cannot fetch thread")
         thread_id_pk = sql_list[0][0]
 
-        if filepath != '':
-            # Insert file entry
+        files_ids = []
+
+        # Insert files entry
+        for fi in files_list:
             self.__cursor.execute("INSERT INTO"+\
                     " files(filepath, storepath, thumbpath)"+\
                     " VALUES (%s, %s, %s)"+\
                     " RETURNING id;",
-                    (filepath, storepath, thumbpath))
+                    (fi['filepath'], fi['storepath'], fi['thumbpath']))
             sql_list = self.__cursor.fetchall()
             if len(sql_list) == 0:
-                return (False, "Cannot get file ID")
-            file_id = sql_list[0][0]
-            self.__conn.commit()
-        else:
-            file_id = None
+                return (False, "Cannot fetch file id")
+            files_ids.append(sql_list[0][0])
 
         # Insert new post entry
         now_ts = Timestamp.now()
@@ -268,11 +266,11 @@ class Database():
         post_id = sql_list[0][0]
 
         # Link file <-> post
-        self.__cursor.execute("INSERT INTO"+\
-                " posts_files(post_id, file_id)"+\
-                " VALUES(%s, %s);",
-                (post_id, board_id))
-        self.__conn.commit()
+        for file_id in files_ids:
+            self.__cursor.execute("INSERT INTO"+\
+                    " posts_files(post_id, file_id)"+\
+                    " VALUES(%s, %s);",
+                    (post_id, file_id))
 
         # Update next_id
         self.__cursor.execute("UPDATE boards SET next_id = %s WHERE id = %s;",
@@ -283,7 +281,6 @@ class Database():
                 (now_ts, thread_id_pk))
 
         self.__conn.commit()
-
         return (True, "")
 
     def delete_thread(self, board_directory: str, thread_id: int) -> bool:
@@ -297,7 +294,7 @@ class Database():
                 " threads.post_id, threads.title, threads.content,"+\
                 " threads.ts_op, threads.ts_bump,"+\
                 " files.filepath, files.storepath, files.thumbpath"+\
-                " FROM threads INNER JOIN posts_files"+\
+                " FROM threads LEFT JOIN posts_files"+\
                 " ON threads.id = posts_files.thread_id"+\
                 " LEFT JOIN files"+\
                 " ON posts_files.file_id = files.id"+\
@@ -343,7 +340,7 @@ class Database():
                     " posts.post_id, posts.title, posts.content, posts.ts,"+\
                     " files.filepath, files.storepath, files.thumbpath"+\
                     " FROM"+\
-                    " posts INNER JOIN posts_files"+\
+                    " posts LEFT JOIN posts_files"+\
                     " ON posts.id = posts_files.post_id"+\
                     " LEFT JOIN files"+\
                     " ON posts_files.file_id = files.id"+\
@@ -359,10 +356,10 @@ class Database():
         prev_id = -1
 
         for post in sql_list:
-            cur_id = int(row[0])
+            cur_id = int(post[0])
 
             if cur_id == prev_id:
-                posts_list[-1].append({
+                posts_list[-1]['files'].append({
                         'filepath': post[4],
                         'storepath': post[5],
                         'thumbpath': post[6],
@@ -373,14 +370,14 @@ class Database():
                     'title': post[1],
                     'content': post[2],
                     'timestamp': post[3],
-                    'has_files': (row[4] != ''),
+                    'has_files': (post[4] != None),
                     'files': [{
                         'filepath': post[4],
                         'storepath': post[5],
                         'thumbpath': post[6],
                     }]
                 })
-            prev_id = int(row[0])
+            prev_id = int(post[0])
 
         return posts_list
     
@@ -389,7 +386,7 @@ class Database():
                 " threads.post_id, threads.title, threads.content,"+\
                 " threads.ts_op, threads.ts_bump,"+\
                 " files.filepath, files.storepath, files.thumbpath"+\
-                " FROM threads INNER JOIN posts_files"+\
+                " FROM threads LEFT JOIN posts_files"+\
                 " ON threads.id = posts_files.thread_id"+\
                 " LEFT JOIN files"+\
                 " ON posts_files.file_id = files.id"+\
