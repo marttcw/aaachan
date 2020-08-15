@@ -1,5 +1,8 @@
 import psycopg2
+
 from .login import Login
+from .table import Table
+
 from ..timestamp import Timestamp
 
 PSYCOPGPREFIX = "psycopg2 msg: "
@@ -8,6 +11,7 @@ class Database():
     def __init__(self):
         self.__conn = None
         self.__cursor = None
+        self.__table = None
 
     def open(self, host: str, dbname: str, user: str, password: str) -> None:
         """Opens the database for processing
@@ -26,6 +30,7 @@ class Database():
             print(PSYCOPGPREFIX+"Connecting to database at '{}'...".format(host))
             self.__cursor = self.__conn.cursor()
             print(PSYCOPGPREFIX+"Connected")
+            self.__table = Table(self.__conn, self.__cursor)
         except Exception as e:
             print(PSYCOPGPREFIX+" "+str(e))
             print(PSYCOPGPREFIX+"Unable to connect to the database.")
@@ -33,122 +38,10 @@ class Database():
     def delete_db(self) -> None:
         """Only use this during development, never in production/release
         """
-        self.__cursor.execute("DROP TABLE IF EXISTS posts_files;")
-        self.__cursor.execute("DROP TABLE IF EXISTS bans;")
-        self.__cursor.execute("DROP TABLE IF EXISTS reports;")
-        self.__cursor.execute("DROP TABLE IF EXISTS users;")
-        self.__cursor.execute("DROP TABLE IF EXISTS posts;")
-        self.__cursor.execute("DROP TABLE IF EXISTS threads;")
-        self.__cursor.execute("DROP TABLE IF EXISTS files;")
-        self.__cursor.execute("DROP TABLE IF EXISTS boards;")
-        self.__cursor.execute("DROP TABLE IF EXISTS categories;")
-        self.__conn.commit()
+        self.__table.delete_db()
 
     def create_db(self) -> None:
-        self.__cursor.execute("CREATE TABLE IF NOT EXISTS users("+\
-                    "id             serial          PRIMARY KEY,"+\
-                    "name           varchar(64)     NOT NULL UNIQUE,"+\
-                    "pass           text            NOT NULL,"+\
-                    "salt           text            NOT NULL,"+\
-                    "type           char(1)         NOT NULL"+\
-                ");")
-        self.__cursor.execute("CREATE TABLE IF NOT EXISTS categories("+\
-                    "id             serial          PRIMARY KEY,"+\
-                    "name           text            NOT NULL UNIQUE"+\
-                ");")
-        self.__cursor.execute("CREATE TABLE IF NOT EXISTS boards("+\
-                    "id             serial          PRIMARY KEY,"+\
-                    "directory      varchar(64)     NOT NULL UNIQUE,"+\
-                    "name           varchar(128)    NOT NULL UNIQUE,"+\
-                    "description    text            NOT NULL,"+\
-                    "type           char(1)         NOT NULL,"+\
-                    "next_id        bigint          NOT NULL,"+\
-                    "nsfw           boolean         NOT NULL,"+\
-                    "category_id    int             NOT NULL,"+\
-                    "CONSTRAINT fk_category_id "+\
-                        "FOREIGN KEY(category_id) "+\
-                            "REFERENCES categories(id) "+\
-                            "ON DELETE CASCADE"+\
-                ");")
-        self.__cursor.execute("CREATE TABLE IF NOT EXISTS files("+\
-                    "id             serial          PRIMARY KEY,"+\
-                    "filepath       text            NOT NULL,"+\
-                    "storepath      text            NOT NULL UNIQUE,"+\
-                    "thumbpath      text"
-                ");")
-        self.__cursor.execute("CREATE TABLE IF NOT EXISTS threads("+\
-                    "id             serial          PRIMARY KEY,"+\
-                    "board_id       int             NOT NULL,"+\
-                    "post_id        bigint          NOT NULL,"+\
-                    "title          varchar(256)    NOT NULL,"+\
-                    "content        text            NOT NULL,"+\
-                    "ts_op          timestamp       NOT NULL,"+\
-                    "ts_bump        timestamp       NOT NULL,"+\
-                    "ip_address     text            NOT NULL,"+\
-                    "CONSTRAINT fk_board_id "+\
-                        "FOREIGN KEY(board_id) "+\
-                            "REFERENCES boards(id) "+\
-                            "ON DELETE CASCADE"+\
-                ");")
-        self.__cursor.execute("CREATE TABLE IF NOT EXISTS posts("+\
-                    "id             serial          PRIMARY KEY,"+\
-                    "thread_id      int             NOT NULL,"+\
-                    "post_id        bigint          NOT NULL,"+\
-                    "title          varchar(256)    NOT NULL,"+\
-                    "content        text            NOT NULL,"+\
-                    "ts             timestamp       NOT NULL,"+\
-                    "ip_address     text            NOT NULL,"+\
-                    "CONSTRAINT fk_thread_id "+\
-                        "FOREIGN KEY(thread_id) "+\
-                            "REFERENCES threads(id) "+\
-                            "ON DELETE CASCADE"+\
-                ");")
-        self.__cursor.execute("CREATE TABLE IF NOT EXISTS posts_files("+\
-                    "id             serial          PRIMARY KEY,"+\
-                    "thread_id      int,"+\
-                    "post_id        int,"+\
-                    "file_id        int             NOT NULL,"+\
-                    "CONSTRAINT fk_thread_id "+\
-                        "FOREIGN KEY(thread_id) "+\
-                            "REFERENCES threads(id) "+\
-                            "ON DELETE CASCADE,"+\
-                    "CONSTRAINT fk_post_id "+\
-                        "FOREIGN KEY(post_id) "+\
-                            "REFERENCES posts(id) "+\
-                            "ON DELETE CASCADE,"+\
-                    "CONSTRAINT fk_file_id "+\
-                        "FOREIGN KEY(file_id) "+\
-                            "REFERENCES files(id) "+\
-                            "ON DELETE CASCADE"+\
-                ");")
-        self.__cursor.execute("CREATE TABLE IF NOT EXISTS bans("+\
-                    "id             serial          PRIMARY KEY,"+\
-                    "ip_address     text            NOT NULL,"+\
-                    "reason         text            NOT NULL,"+\
-                    "ts_start       timestamp       NOT NULL,"+\
-                    "ts_end         timestamp"+\
-                ");")
-        self.__cursor.execute("CREATE TABLE IF NOT EXISTS reports("+\
-                    "id             serial          PRIMARY KEY,"+\
-                    "board_id       int             NOT NULL,"+\
-                    "thread_id      int,"+\
-                    "post_id        int,"+\
-                    "reason         text            NOT NULL,"+\
-                    "ts             timestamp       NOT NULL,"+\
-                    "CONSTRAINT fk_board_id "+\
-                        "FOREIGN KEY(board_id) "+\
-                            "REFERENCES boards(id) "+\
-                            "ON DELETE CASCADE,"+\
-                    "CONSTRAINT fk_thread_id "+\
-                        "FOREIGN KEY(thread_id) "+\
-                            "REFERENCES threads(id) "+\
-                            "ON DELETE CASCADE,"+\
-                    "CONSTRAINT fk_post_id "+\
-                        "FOREIGN KEY(post_id) "+\
-                            "REFERENCES posts(id) "+\
-                            "ON DELETE CASCADE"+\
-                ");")
-        self.__conn.commit()
+        self.__table.create_db()
         print(PSYCOPGPREFIX+"Table created successfully")
 
     def new_admin(self, admin_username: str, admin_pass: str) -> None:
@@ -210,7 +103,7 @@ class Database():
             self.__cursor.execute("INSERT INTO"+\
                     " posts_files(thread_id, file_id)"+\
                     " VALUES(%s, %s);",
-                    (board_id, thread_id, file_id))
+                    (thread_id, file_id))
 
         # Update next_id
         self.__cursor.execute("UPDATE boards SET next_id = %s WHERE id = %s;",
@@ -430,29 +323,37 @@ class Database():
         return threads_list
 
     def new_board(self, directory: str, name: str, description: str,
-            btype: str, category_id: int, nsfw: bool) -> None:
+            btype: str, category_id: int, nsfw: bool, f_types: str,
+            f_limit: int) -> None:
         self.__cursor.execute("INSERT INTO boards(directory, name, description,"+\
-                " type, next_id, category_id, nsfw)"+\
-                " VALUES (%s,%s,%s,%s,%s,%s,%s);",
-                (directory, name, description, btype, 1, category_id, nsfw))
+                " type, next_id, category_id, nsfw, files_types, files_limit)"+\
+                " VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s);",
+                (directory, name, description, btype, 1, category_id, nsfw,
+                    f_types, f_limit))
         self.__conn.commit()
 
     def edit_board(self, directory: str, name: str, description: str,
-            btype: str, category_id: int, nsfw: bool) -> None:
+            btype: str, category_id: int, nsfw: bool, f_types: str,
+            f_limit: int) -> None:
         self.__cursor.execute("UPDATE boards SET"+\
                 " name = %s,"+\
                 " description = %s,"+\
                 " type = %s,"+\
                 " category_id = %s,"+\
                 " nsfw = %s"+\
+                " files_types = %s"+\
+                " files_limit = %s"+\
                 " WHERE directory = %s;",
-                (name, description, btype, category_id, nsfw, directory))
+                (name, description, btype, category_id, nsfw, directory,
+                    f_types, f_limit))
         self.__conn.commit()
 
     def get_board(self, directory: str) -> dict:
-        self.__cursor.execute("SELECT name, description, type, next_id, nsfw, category_id"+\
-                " FROM boards WHERE directory = %s;",
-                (directory,))
+        self.__cursor.execute("""
+                SELECT name, description, type, next_id, nsfw, category_id,
+                        files_types, files_limit
+                FROM boards WHERE directory = %s;
+                """, (directory,))
         sql_list = self.__cursor.fetchall()
         if len(sql_list) == 0:
             return {
@@ -467,7 +368,9 @@ class Database():
                     'type': board[2],
                     'next_id': board[3],
                     'nsfw': bool(board[4]),
-                    'category_id': int(board[5])
+                    'category_id': int(board[5]),
+                    'files_types': board[6],
+                    'files_limit': int(board[7])
             }
 
     def get_boards(self) -> list:
@@ -624,6 +527,34 @@ class Database():
             })
 
         return reports_list
+
+    def get_files_limit(self, board_directory: str) -> (int, str):
+        """ Get the files amount limit
+        """
+        self.__cursor.execute("""
+                SELECT files_limit
+                FROM boards
+                WHERE directory = %s;
+                """, (board_directory,))
+        sql_list = self.__cursor.fetchall()
+        if len(sql_list) == 0:
+            return (0, "Cannot find board/fetch limit.")
+        else:
+            return (int(sql_list[0][0]), "")
+
+    def get_files_types(self, board_directory: str) -> (str, str):
+        """
+        """
+        self.__cursor.execute("""
+                SELECT files_types
+                FROM boards
+                WHERE directory = %s;
+                """, (board_directory,))
+        sql_list = self.__cursor.fetchall()
+        if len(sql_list) == 0:
+            return ("", "Cannot find board/types allowed.")
+        else:
+            return (sql_list[0][0], "")
 
     def close(self) -> None:
         print(PSYCOPGPREFIX+"Closing session...")

@@ -21,7 +21,6 @@ thumbnail = Thumbnail()
 ip_sessions = IpSessions()
 
 new = True
-allowed_extensions = ['png', 'jpg', 'jpeg', 'gif']
 
 minify(app=app, html=True, js=True, cssless=True)
 
@@ -58,7 +57,7 @@ def setup():
 
 @app.route('/new_board', methods=['GET', 'POST'])
 def new_board():
-    if not sessions.exists(session['id']):
+    if 'id' not in session or not sessions.exists(session['id']):
         flash('Error')
         return redirect(url_for('index'))
 
@@ -83,7 +82,9 @@ def new_board():
                     form.description.data,
                     form.btype.data,
                     cat_id,
-                    form.nsfw.data)
+                    form.nsfw.data,
+                    form.files_types.data,
+                    form.files_limit.data)
             flash('New board created')
             return redirect(url_for('new_board'))
         else:
@@ -94,7 +95,7 @@ def new_board():
 
 @app.route('/edit_board/<board_dir>/', methods=['GET', 'POST'])
 def edit_board(board_dir: str):
-    if not sessions.exists(session['id']):
+    if 'id' not in session or not sessions.exists(session['id']):
         flash('Error')
         return redirect(url_for('index'))
 
@@ -119,7 +120,9 @@ def edit_board(board_dir: str):
                     form.description.data,
                     form.btype.data,
                     cat_id,
-                    form.nsfw.data)
+                    form.nsfw.data,
+                    form.files_types.data,
+                    form.files_limit.data)
             flash('Board updated')
         else:
             flash('Board edit not accepted')
@@ -132,6 +135,8 @@ def edit_board(board_dir: str):
             form.btype.data = board_info['type']
             form.nsfw.data = board_info['nsfw']
             form.category.data = board_info['category_id']
+            form.files_types.data = board_info['files_types']
+            form.files_limit.data = board_info['files_limit']
         else:
             flash('Board does not exists')
             return redirect(url_for('dashboard'))
@@ -141,7 +146,7 @@ def edit_board(board_dir: str):
 
 @app.route('/edit_board', methods=['GET'])
 def edit_board_overview():
-    if sessions.exists(session['id']):
+    if 'id' not in session or sessions.exists(session['id']):
         return render_template('edit_board_overview.html',
                 categories=db.get_boards())
     else:
@@ -150,7 +155,7 @@ def edit_board_overview():
 
 @app.route('/config_write')
 def config_write():
-    if sessions.exists(session['id']):
+    if 'id' not in session or sessions.exists(session['id']):
         config.write()
         flash('Overwritten config file')
         return redirect(url_for('dashboard'))
@@ -160,7 +165,7 @@ def config_write():
 
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
-    if sessions.exists(session['id']):
+    if 'id' not in session or sessions.exists(session['id']):
         return render_template('dashboard.html')
     else:
         flash('Error')
@@ -168,9 +173,8 @@ def dashboard():
 
 @app.route('/admin_login', methods=['GET', 'POST'])
 def admin_login():
-    if 'id' in session:
-        if sessions.exists(session['id']):
-            return redirect(url_for('dashboard'))
+    if 'id' not in session or sessions.exists(session['id']):
+        return redirect(url_for('dashboard'))
 
     form = LoginForm(request.form)
     if request.method == 'POST':
@@ -187,9 +191,9 @@ def admin_login():
 
     return render_template('admin_login.html', form=form)
 
-def allowed_file(filename):
+def allowed_file(filename, allowed_extensions_str):
     return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in allowed_extensions
+           filename.rsplit('.', 1)[1].lower() in allowed_extensions_str.split(' ')
 
 @app.route('/board/<board_dir>/thread/<thread_id>/new_post', methods=['POST'])
 def new_post(board_dir: str, thread_id: int):
@@ -213,13 +217,16 @@ def new_post(board_dir: str, thread_id: int):
         if not Processing().allowed_content(form.content.data):
             flash('Error, disallowed content')
             return redirect(url_for('thread', board_dir=board_dir, thread_id=thread_id))
+        if len(form.files.data) > board_info['files_limit']:
+            flash('Error: Too much files, limit: '+str(board_info['files_limit']))
+            return redirect(url_for('thread', board_dir=board_dir, thread_id=thread_id))
 
         title = ''
         invalid_files = False
         files_list = []
 
         for fi in form.files.data:
-            if allowed_file(fi.filename):
+            if allowed_file(fi.filename, board_info['files_types']):
                 files_list.append(fi)
             elif fi.filename == '':
                 break
@@ -294,12 +301,15 @@ def new_thread(board_dir: str):
         if not Processing().allowed_content(form.content.data):
             flash('Error, disallowed content')
             return redirect(url_for('board', board_dir=board_dir))
+        if len(form.files.data) > board_info['files_limit']:
+            flash('Error: Too much files, limit: '+str(board_info['files_limit']))
+            return redirect(url_for('board', board_dir=board_dir))
 
         invalid_files = False
         files_list = []
 
         for fi in form.files.data:
-            if allowed_file(fi.filename):
+            if allowed_file(fi.filename, board_info['files_types']):
                 files_list.append(fi)
             else:
                 flash('Invalid file: '+fi.filename)
