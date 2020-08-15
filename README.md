@@ -1,5 +1,20 @@
-# aaachan
-Imageboard written in Python + Flask and uses PostgreSQL for database
+# aaachan - Anonymous Imageboard Software
+Anonymous imageboard software written in Python + Flask and uses PostgreSQL for database
+
+It has the basic imageboard features expected, such as boards for different
+topics, image attachments, quoting, and moderation. It is anonymous and
+requires no account to post and view.
+
+## Features
+* Support for non-JavaScript browsers
+* Posting
+  * No accounts required
+  * Quoting
+  * Multiple of files per post
+* Moderation
+  * Post reporting
+* Pages
+  * Dynamic page creation
 
 ## Requirements
 * Python >= 3.6
