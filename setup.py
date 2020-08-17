@@ -14,7 +14,8 @@ setup(
         long_description_content_type='text/markdown',
         python_requires='>=3.6',
         install_requires=[
-            'Flask', 'Flask-Minify', 'psycopg2', 'wtforms', 'Pillow'
+            'Flask', 'Flask-Minify', 'psycopg2', 'wtforms', 'Pillow',
+            'opencv-python'
         ],
         entry_points = {
               'console_scripts': [

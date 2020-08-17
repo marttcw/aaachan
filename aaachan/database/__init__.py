@@ -340,12 +340,12 @@ class Database():
                 " description = %s,"+\
                 " type = %s,"+\
                 " category_id = %s,"+\
-                " nsfw = %s"+\
-                " files_types = %s"+\
+                " nsfw = %s,"+\
+                " files_types = %s,"+\
                 " files_limit = %s"+\
                 " WHERE directory = %s;",
-                (name, description, btype, category_id, nsfw, directory,
-                    f_types, f_limit))
+                (name, description, btype, category_id, nsfw,
+                    f_types, f_limit, directory))
         self.__conn.commit()
 
     def get_board(self, directory: str) -> dict:

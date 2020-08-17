@@ -30,8 +30,12 @@
                 {% for file in post.files %}
                   <div class="image">
                     <p>{{ file.filepath }}</p>
-                    <a href="/uploads/{{ file.storepath }}">
-                      <img src="/uploads/{{ file.thumbpath }}" alt="{{ file.filepath }}">
+                    <a target="_blank" rel="noopener noreferrer" href="/uploads/{{ file.storepath }}">
+                      {% if file.thumbpath %}
+                        <img src="/uploads/{{ file.thumbpath }}" alt="{{ file.filepath }}">
+                      {% else %}
+                        Open {{ file.storepath }}...
+                      {% endif %}
                     </a>
                   </div>
                 {% endfor %}

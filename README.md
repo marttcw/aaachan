@@ -26,6 +26,7 @@ requires no account to post and view.
 * [wtforms](https://wtforms.readthedocs.io/en/2.3.x/) - Flexible form validation and rendering library for Python web development
 * [flask-wtf](https://github.com/lepture/flask-wtf) - Simple integration of Flask and WTForms
 * [Pillow](https://python-pillow.org/) - Pillow - PIL fork - Python Imaging Library
+* [opencv-python](https://github.com/skvark/opencv-python) - Wrapper package for OpenCV python binding
 
 ### Optional
 * [pytest](https://docs.pytest.org/en/stable/) - Python unit testing

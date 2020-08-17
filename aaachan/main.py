@@ -173,7 +173,7 @@ def dashboard():
 
 @app.route('/admin_login', methods=['GET', 'POST'])
 def admin_login():
-    if 'id' not in session or sessions.exists(session['id']):
+    if 'id' in session and sessions.exists(session['id']):
         return redirect(url_for('dashboard'))
 
     form = LoginForm(request.form)
@@ -191,7 +191,7 @@ def admin_login():
 
     return render_template('admin_login.html', form=form)
 
-def allowed_file(filename, allowed_extensions_str):
+def allowed_file(filename: str, allowed_extensions_str: str):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in allowed_extensions_str.split(' ')
 
@@ -249,7 +249,12 @@ def new_post(board_dir: str, thread_id: int):
                 fi.save(fullstorepath)
 
                 # Generate and save thumbnail
-                thumbpath = thumbnail.generate(fullstorepath)
+                thumbpath, has_thumb, alt_thumb = thumbnail.generate(fullstorepath)
+
+                if not has_thumb:
+                    thumbpath = alt_thumb
+                if thumbpath == '':
+                    thumbpath = None
 
                 fdb_list.append({
                     'filepath': filename,
@@ -334,7 +339,12 @@ def new_thread(board_dir: str):
                 fi.save(fullstorepath)
 
                 # Generate and save thumbnail
-                thumbpath = thumbnail.generate(fullstorepath)
+                thumbpath, has_thumb, alt_thumb = thumbnail.generate(fullstorepath)
+
+                if not has_thumb:
+                    thumbpath = alt_thumb
+                if thumbpath == '':
+                    thumbpath = None
 
                 fdb_list.append({
                     'filepath': filename,
