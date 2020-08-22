@@ -6,10 +6,16 @@
 
   <ul>
     <li><a href="{{ url_for('index') }}">Back to Homepage</a></li>
-    <li><a href="{{ url_for('new_board') }}">New board</a></li>
-    <li><a href="{{ url_for('edit_board_overview') }}">Edit board</a></li>
-    <li><a href="{{ url_for('config_write') }}">Write config file</a></li>
-    <li><a href="{{ url_for('reports_list') }}">See Reports</a></li>
+    <li><a href="{{ url_for('logout') }}">Logout</a></li>
+    {% if utype == 'a' %}
+      <li><a href="{{ url_for('new_board') }}">New board</a></li>
+      <li><a href="{{ url_for('edit_board_overview') }}">Edit board</a></li>
+      <li><a href="{{ url_for('config_write') }}">Write config file</a></li>
+      <li><a href="{{ url_for('create_mod') }}">Create Moderator account</a></li>
+    {% endif %}
+    {% if utype in ['a', 'm'] %}
+      <li><a href="{{ url_for('reports_list') }}">See Reports</a></li>
+    {% endif %}
   </ul>
 </div>
 {% endblock %}

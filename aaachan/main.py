@@ -7,7 +7,7 @@ from werkzeug.utils import secure_filename
 import os, atexit
 
 from .database import Database
-from .forms import SetupForm, NewBoardForm, LoginForm, NewThreadForm, NewPostForm, EditBoardForm, ReportForm
+from .forms import SetupForm, NewBoardForm, LoginForm, NewThreadForm, NewPostForm, EditBoardForm, ReportForm, NewModForm
 from .config import Config
 from .sessions import Sessions
 from .thumbnail import Thumbnail
@@ -146,7 +146,7 @@ def edit_board(board_dir: str):
 
 @app.route('/edit_board', methods=['GET'])
 def edit_board_overview():
-    if 'id' not in session or sessions.exists(session['id']):
+    if 'id' in session and sessions.exists(session['id']):
         return render_template('edit_board_overview.html',
                 categories=db.get_boards())
     else:
@@ -155,7 +155,7 @@ def edit_board_overview():
 
 @app.route('/config_write')
 def config_write():
-    if 'id' not in session or sessions.exists(session['id']):
+    if 'id' in session and sessions.exists(session['id']):
         config.write()
         flash('Overwritten config file')
         return redirect(url_for('dashboard'))
@@ -163,10 +163,32 @@ def config_write():
         flash('Error')
         return redirect(url_for('index'))
 
-@app.route('/dashboard', methods=['GET', 'POST'])
+@app.route('/create_mod', methods=['GET', 'POST'])
+def create_mod():
+    if 'id' in session and sessions.exists(session['id']):
+        form = NewModForm(request.form)
+
+        if request.method == 'POST':
+            if form.validate():
+                db.new_mod(form.username.data,
+                        form.password.data)
+                flash('New user "'+str(form.username.data)+'" created')
+                return render_template('create_mod.html',
+                        form=NewModForm())
+            else:
+                flash('Invalid form')
+
+        return render_template('create_mod.html',
+                form=form)
+    else:
+        flash('Error')
+        return redirect(url_for('index'))
+
+@app.route('/dashboard')
 def dashboard():
-    if 'id' not in session or sessions.exists(session['id']):
-        return render_template('dashboard.html')
+    if 'id' in session and sessions.exists(session['id']):
+        return render_template('dashboard.html',
+                utype=sessions.type(session['id']))
     else:
         flash('Error')
         return redirect(url_for('index'))
@@ -179,10 +201,11 @@ def admin_login():
     form = LoginForm(request.form)
     if request.method == 'POST':
         if form.validate():
-            if db.verify_user(form.username.data,
-                    form.password.data):
+            verified, utype = db.verify_user(form.username.data,
+                    form.password.data)
+            if verified:
                 flash('Logged in')
-                session['id'] = sessions.add(form.username.data)
+                session['id'] = sessions.add(form.username.data, utype)
                 return redirect(url_for('dashboard'))
             else:
                 flash('Error')
@@ -190,6 +213,17 @@ def admin_login():
             flash('Error')
 
     return render_template('admin_login.html', form=form)
+
+@app.route('/logout')
+def logout():
+    if 'id' in session and sessions.exists(session['id']):
+        sessions.remove(session['id'])
+        session.pop('id', None)
+        flash('Logged out')
+    else:
+        flash('Error')
+    return redirect(url_for('index'))
+    
 
 def allowed_file(filename: str, allowed_extensions_str: str):
     return '.' in filename and \

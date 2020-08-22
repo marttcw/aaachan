@@ -15,6 +15,15 @@ class SetupForm(FlaskForm):
     ])
     confirm = PasswordField('Repeat Password')
 
+class NewModForm(FlaskForm):
+    username = StringField('Username', [Length(min=1, max=64)])
+    password = PasswordField('New Password', [
+        DataRequired(),
+        EqualTo('confirm', message='Passwords must match'),
+        Length(min=8, max=256)
+    ])
+    confirm = PasswordField('Repeat Password')
+
 class NewBoardForm(FlaskForm):
     directory = StringField('Directory', [
         DataRequired(),

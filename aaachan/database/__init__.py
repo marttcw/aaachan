@@ -51,15 +51,23 @@ class Database():
                 (admin_username, db_pass['hashed'], db_pass['salt'], 'a'));
         self.__conn.commit()
 
-    def verify_user(self, username: str, password: str) -> bool:
-        self.__cursor.execute("SELECT pass, salt FROM users WHERE name = %s;", (username,))
+    def new_mod(self, username: str, password: str) -> bool:
+        db_pass = Login.generate(password)
+        self.__cursor.execute("INSERT INTO users(name, pass, salt, type)"+\
+                " VALUES (%s,%s,%s,%s)",
+                (username, db_pass['hashed'], db_pass['salt'], 'm'));
+        self.__conn.commit()
+
+    def verify_user(self, username: str, password: str) -> (bool, str):
+        self.__cursor.execute("SELECT pass, salt, type"+\
+                " FROM users WHERE name = %s;", (username,))
         sql_list = self.__cursor.fetchall()
         if len(sql_list) == 0:
-            return False
+            return (False, '!')
         else:
             got_pass = sql_list[0][0]
             got_salt = sql_list[0][1]
-            return Login.match(got_pass, password, got_salt)
+            return (Login.match(got_pass, password, got_salt), sql_list[0][2])
 
     def new_thread(self, board_directory: str, title: str, content: str,
             ip_address: str, files_list: list) -> (bool, str):

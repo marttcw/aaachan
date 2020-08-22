@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% set title = "create moderator" %}
+{% block content %}
+<div>
+  <h2>Create Moderator</h2>
+  <p>Create a new moderator account</p>
+  <a href="/dashboard">Back to dashboard</a>
+
+  {% from "_formhelpers.html" import render_field %}
+  <form method="post">
+    {{ form.csrf_token }}
+    <dl>
+      {{ render_field(form.username) }}
+      {{ render_field(form.password) }}
+      {{ render_field(form.confirm) }}
+    </dl>
+    <input type="submit" value="New Moderator">
+  </form>
+
+</div>
+{% endblock %}
+
