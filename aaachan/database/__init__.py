@@ -13,7 +13,7 @@ class Database():
         self.__cursor = None
         self.__table = None
 
-    def open(self, host: str, dbname: str, user: str, password: str) -> None:
+    def open(self, host: str, dbname: str, user: str, password: str) -> bool:
         """Opens the database for processing
 
         :param host: PostgreSQL hostname
@@ -31,9 +31,11 @@ class Database():
             self.__cursor = self.__conn.cursor()
             print(PSYCOPGPREFIX+"Connected")
             self.__table = Table(self.__conn, self.__cursor)
+            return True
         except Exception as e:
             print(PSYCOPGPREFIX+" "+str(e))
             print(PSYCOPGPREFIX+"Unable to connect to the database.")
+            return False
 
     def delete_db(self) -> None:
         """Only use this during development, never in production/release
@@ -383,7 +385,7 @@ class Database():
 
     def get_boards(self) -> list:
         self.__cursor.execute("SELECT boards.directory, boards.name, boards.nsfw,"+\
-                    " categories.id, categories.name"+\
+                " categories.id, categories.name"+\
                 " FROM boards INNER JOIN categories"+\
                 " ON boards.category_id = categories.id"+\
                 " ORDER BY categories.name ASC, boards.directory ASC;")

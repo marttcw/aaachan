@@ -4,7 +4,7 @@ from flask import Flask, render_template, request, flash, redirect, url_for, ses
 from flask_minify import minify
 from werkzeug.utils import secure_filename
 
-import os, atexit
+import os, atexit, sys
 
 from .database import Database
 from .forms import SetupForm, NewBoardForm, LoginForm, NewThreadForm, NewPostForm, EditBoardForm, ReportForm, NewModForm
@@ -522,10 +522,16 @@ def setup():
 
     db_set = config.get()['database']
 
-    db.open(db_set['host'],
+    opened = db.open(db_set['host'],
             db_set['name'],
             db_set['user'],
             db_set['pass'])
+
+    if not opened:
+        func = request.environ.get('werkzeug.server.shutdown')
+        if func is None:
+            raise RuntimeError('Not running with werkzeug server')
+        func()
 
     if config.get()['site']['name'] != '':
         new = False

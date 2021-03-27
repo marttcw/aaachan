@@ -42,7 +42,7 @@ requires no account to post and view.
 * `python3 -m venv .venv`
 
 ### Installation
-* Either: `pip install -r requirements.txt` or `pip install Flask Flask-Minify psycopg2 wtforms flask_wtf Pillow pytest sphinx sphinx-autodoc-typehints`
+* Either: `pip install -r requirements.txt` or `pip install Flask Flask-Minify psycopg2 wtforms flask_wtf Pillow pytest sphinx sphinx-autodoc-typehints opencv-python`
 
 ### Running without installation
 
